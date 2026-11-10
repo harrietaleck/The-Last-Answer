@@ -99,6 +99,14 @@ namespace TLA.Systems.Dialogue
                     text = k.FindReaction(plan.EvidenceId).reaction;
                     break;
 
+                case ResponseKind.ChallengeRejected:
+                    text = Pick(GenericLines.ChallengeRejected(c.Temperament), plan.VariantIndex);
+                    break;
+
+                case ResponseKind.ChallengeUnproven:
+                    text = Pick(GenericLines.ChallengeUnproven(c.Temperament), plan.VariantIndex);
+                    break;
+
                 case ResponseKind.EvidenceRepeated:
                     text = Pick(GenericLines.EvidenceRepeated, plan.VariantIndex);
                     break;
@@ -134,6 +142,10 @@ namespace TLA.Systems.Dialogue
                     return Pick(new[] { $"{name}'s chair scrapes back an inch.", $"{name} lets out a short, disbelieving laugh." }, c.TurnNumber);
                 case ResponseKind.TopicPressured:
                     return Pick(new[] { $"{name} looks down at the table.", $"{name} rubs the bridge of the nose and exhales." }, c.TurnNumber);
+                case ResponseKind.ChallengeRejected:
+                    return Pick(new[] { $"{name} almost smiles.", $"{name} sits back, relaxed now." }, c.TurnNumber);
+                case ResponseKind.ChallengeUnproven:
+                    return Pick(new[] { $"{name} hesitates, just for a second.", $"{name}'s eyes flick to the evidence, then away." }, c.TurnNumber);
             }
 
             switch (c.Level)
@@ -246,6 +258,26 @@ namespace TLA.Systems.Dialogue
             SuspectTemperament.Arrogant => new[] { "Am I meant to be impressed?", "Fascinating. Irrelevant, but fascinating." },
             SuspectTemperament.Evasive => new[] { "Huh. Where did you find that?", "Can't say it means anything to me." },
             _ => new[] { "That doesn't mean anything to me.", "I can't help you with that." },
+        };
+
+        // A challenge that doesn't hold: no case facts, just confidence.
+        public static string[] ChallengeRejected(SuspectTemperament t) => t switch
+        {
+            SuspectTemperament.Nervous => new[] { "I don't- that doesn't have anything to do with what I said.", "I don't understand. How does that make me a liar?" },
+            SuspectTemperament.Defensive => new[] { "That doesn't contradict a word I've said.", "Is that it? That proves nothing." },
+            SuspectTemperament.Arrogant => new[] { "That's your evidence? Try again.", "You're grasping, detective. It shows." },
+            SuspectTemperament.Evasive => new[] { "I'm not sure what you think that shows.", "Interesting. And irrelevant." },
+            _ => new[] { "That doesn't change what I told you.", "I don't see the connection." },
+        };
+
+        // The right evidence, not yet enough to prove it: evasive, a little shaken.
+        public static string[] ChallengeUnproven(SuspectTemperament t) => t switch
+        {
+            SuspectTemperament.Nervous => new[] { "That- that could be anyone. Couldn't it?", "I don't know what that is. I really don't." },
+            SuspectTemperament.Defensive => new[] { "That could be anyone. Come back when you have something real.", "You can't prove that has anything to do with me." },
+            SuspectTemperament.Arrogant => new[] { "Suggestive. Not conclusive. You know the difference, I hope.", "Nice try. You'll need more than that." },
+            SuspectTemperament.Evasive => new[] { "Could be. Could be a lot of things.", "I wouldn't read too much into that." },
+            _ => new[] { "That doesn't prove anything.", "You're guessing." },
         };
 
         public static string[] Cornered(SuspectTemperament t) => t switch

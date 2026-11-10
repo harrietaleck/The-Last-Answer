@@ -38,7 +38,14 @@ namespace TLA.Systems.Save
             string path = PathFor(key);
             string tempPath = path + ".tmp";
 
-            File.WriteAllText(tempPath, content);
+            // Write and flush to disk before swapping, so a crash can't leave a half-written save in place.
+            using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var writer = new StreamWriter(stream, new System.Text.UTF8Encoding(false)))
+            {
+                writer.Write(content);
+                writer.Flush();
+                stream.Flush(true);
+            }
 
             if (File.Exists(path))
                 File.Replace(tempPath, path, path + ".bak"); // swap in, keep old file as backup
@@ -65,11 +72,29 @@ namespace TLA.Systems.Save
             }
         }
 
+        public bool TryReadBackup(string key, out string content)
+        {
+            string path = PathFor(key) + ".bak";
+            content = null;
+            if (!File.Exists(path)) return false;
+            try
+            {
+                content = File.ReadAllText(path);
+                return true;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError($"[Save] Could not read backup '{path}': {exception.Message}");
+                return false;
+            }
+        }
+
         public void Delete(string key)
         {
             string path = PathFor(key);
             if (File.Exists(path)) File.Delete(path);
             if (File.Exists(path + ".bak")) File.Delete(path + ".bak");
+            if (File.Exists(path + ".tmp")) File.Delete(path + ".tmp");
         }
 
         private string PathFor(string key)

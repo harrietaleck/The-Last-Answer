@@ -1,0 +1,249 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b82566c220f365847a5ec82cc3fb41b9, type: 3}
+  m_Name: AudioLibrary
+  m_EditorClassIdentifier: TLA.Data::TLA.Data.Audio.AudioLibrary
+  cues:
+  - cue: 1
+    clips:
+    - {fileID: 8300000, guid: 884bb2fe22d6b7c479843b0abe730ae6, type: 3}
+    volume: 0.25
+    pitch: {x: 0.98, y: 1.02}
+    cooldown: 0.06
+    maxInstances: 1
+    priority: 10
+    spatial: 0
+  - cue: 2
+    clips:
+    - {fileID: 8300000, guid: 010e764d1b017774aa4b4298b1b0b67c, type: 3}
+    volume: 0.45
+    pitch: {x: 0.97, y: 1.03}
+    cooldown: 0.05
+    maxInstances: 2
+    priority: 30
+    spatial: 0
+  - cue: 3
+    clips:
+    - {fileID: 8300000, guid: 8c04e736fe86d2b439f8856052eef867, type: 3}
+    volume: 0.35
+    pitch: {x: 1, y: 1}
+    cooldown: 0.1
+    maxInstances: 1
+    priority: 30
+    spatial: 0
+  - cue: 4
+    clips:
+    - {fileID: 8300000, guid: 323f5fa47ca744644940101bce86afa7, type: 3}
+    volume: 0.3
+    pitch: {x: 1, y: 1}
+    cooldown: 0.1
+    maxInstances: 1
+    priority: 30
+    spatial: 0
+  - cue: 5
+    clips:
+    - {fileID: 8300000, guid: 8ea77ab8ece48ea4299e6e7e51ba43c6, type: 3}
+    volume: 0.2
+    pitch: {x: 0.95, y: 1.05}
+    cooldown: 0.07
+    maxInstances: 1
+    priority: 10
+    spatial: 0
+  - cue: 6
+    clips:
+    - {fileID: 8300000, guid: 8ffe607035d268b449cf53609bc6ed7a, type: 3}
+    volume: 0.45
+    pitch: {x: 0.95, y: 1.05}
+    cooldown: 0.12
+    maxInstances: 1
+    priority: 35
+    spatial: 0
+  - cue: 7
+    clips:
+    - {fileID: 8300000, guid: 41ec994271861154295a6f9cd48cc08d, type: 3}
+    volume: 0.25
+    pitch: {x: 1, y: 1}
+    cooldown: 0.6
+    maxInstances: 1
+    priority: 20
+    spatial: 0
+  - cue: 81
+    clips:
+    - {fileID: 8300000, guid: 41ec994271861154295a6f9cd48cc08d, type: 3}
+    volume: 0.3
+    pitch: {x: 1.1, y: 1.1}
+    cooldown: 1
+    maxInstances: 1
+    priority: 25
+    spatial: 0
+  - cue: 20
+    clips:
+    - {fileID: 8300000, guid: 0836d4de5770d0841b4114c0d8d4db87, type: 3}
+    - {fileID: 8300000, guid: 501c40ea774286647a7653aa3af1a27e, type: 3}
+    - {fileID: 8300000, guid: 5ac683ed1b6e25841b65cd82d26a5140, type: 3}
+    - {fileID: 8300000, guid: 8b5a69aa15053284dad6e2c14d61a60c, type: 3}
+    volume: 0.5
+    pitch: {x: 0.92, y: 1.06}
+    cooldown: 0.18
+    maxInstances: 2
+    priority: 20
+    spatial: 0
+  - cue: 21
+    clips:
+    - {fileID: 8300000, guid: 7b0b99c71b0e34b479b89c369dce3036, type: 3}
+    volume: 0.6
+    pitch: {x: 0.96, y: 1.04}
+    cooldown: 0.3
+    maxInstances: 1
+    priority: 60
+    spatial: 1
+  - cue: 22
+    clips:
+    - {fileID: 8300000, guid: b60178629a401b049a2ac5115b14f609, type: 3}
+    volume: 0.6
+    pitch: {x: 0.96, y: 1.04}
+    cooldown: 0.3
+    maxInstances: 1
+    priority: 60
+    spatial: 1
+  - cue: 23
+    clips:
+    - {fileID: 8300000, guid: cf2613000272f074d9884563fa458710, type: 3}
+    volume: 0.4
+    pitch: {x: 0.95, y: 1.05}
+    cooldown: 0.1
+    maxInstances: 1
+    priority: 30
+    spatial: 1
+  - cue: 24
+    clips:
+    - {fileID: 8300000, guid: ed8edca86340b9a458135ba1e8e8a367, type: 3}
+    volume: 0.45
+    pitch: {x: 0.95, y: 1.05}
+    cooldown: 0.5
+    maxInstances: 1
+    priority: 40
+    spatial: 1
+  - cue: 40
+    clips:
+    - {fileID: 8300000, guid: 3ec02243a977d9b4389dfcd8f01cdcac, type: 3}
+    volume: 0.5
+    pitch: {x: 0.95, y: 1.05}
+    cooldown: 0.2
+    maxInstances: 1
+    priority: 50
+    spatial: 0
+  - cue: 41
+    clips:
+    - {fileID: 8300000, guid: 49ca27ab97cb8294bb49aff40ddaecef, type: 3}
+    volume: 0.45
+    pitch: {x: 1, y: 1}
+    cooldown: 0.3
+    maxInstances: 1
+    priority: 60
+    spatial: 0
+  - cue: 42
+    clips:
+    - {fileID: 8300000, guid: 8e0d86aa677bdfb468b98eb67af3b78e, type: 3}
+    volume: 0.35
+    pitch: {x: 1, y: 1}
+    cooldown: 0.3
+    maxInstances: 1
+    priority: 55
+    spatial: 0
+  - cue: 43
+    clips:
+    - {fileID: 8300000, guid: b8945feeca800f548818abfa6b087802, type: 3}
+    volume: 0.3
+    pitch: {x: 1, y: 1}
+    cooldown: 0.8
+    maxInstances: 1
+    priority: 45
+    spatial: 0
+  - cue: 44
+    clips:
+    - {fileID: 8300000, guid: 7a2e7c08d07ac874692e644161afcd1a, type: 3}
+    volume: 0.45
+    pitch: {x: 1, y: 1}
+    cooldown: 0.5
+    maxInstances: 1
+    priority: 65
+    spatial: 0
+  - cue: 45
+    clips:
+    - {fileID: 8300000, guid: 8595a12ae96af0f47a70997f735c67e6, type: 3}
+    volume: 0.4
+    pitch: {x: 1, y: 1}
+    cooldown: 1.2
+    maxInstances: 1
+    priority: 70
+    spatial: 0
+  - cue: 46
+    clips:
+    - {fileID: 8300000, guid: 46ff7436109936546be3dd722cc424c9, type: 3}
+    volume: 0.45
+    pitch: {x: 0.97, y: 1.03}
+    cooldown: 0.3
+    maxInstances: 1
+    priority: 55
+    spatial: 0
+  - cue: 60
+    clips:
+    - {fileID: 8300000, guid: 4b84890e98ff6a646851c4fe98e7b547, type: 3}
+    volume: 0.55
+    pitch: {x: 1, y: 1}
+    cooldown: 1
+    maxInstances: 1
+    priority: 90
+    spatial: 0
+  - cue: 61
+    clips:
+    - {fileID: 8300000, guid: 1dd0310bf24e5734295afa31f13e9a64, type: 3}
+    volume: 0.4
+    pitch: {x: 1, y: 1}
+    cooldown: 0.8
+    maxInstances: 1
+    priority: 80
+    spatial: 0
+  - cue: 62
+    clips:
+    - {fileID: 8300000, guid: a2dd669b6ca1c724287924867ceffbb2, type: 3}
+    volume: 0.4
+    pitch: {x: 1, y: 1}
+    cooldown: 0.8
+    maxInstances: 1
+    priority: 80
+    spatial: 0
+  - cue: 80
+    clips:
+    - {fileID: 8300000, guid: 78a3ade1d11b6314b9187ee1b8f7964d, type: 3}
+    volume: 0.55
+    pitch: {x: 1, y: 1}
+    cooldown: 2
+    maxInstances: 1
+    priority: 100
+    spatial: 0
+  music:
+  - state: 1
+    clip: {fileID: 8300000, guid: 3e2e9268438b3814085a474b12d66b43, type: 3}
+    volume: 0.45
+  - state: 2
+    clip: {fileID: 8300000, guid: 634ff7a3b6512a94c93e9c1bb1978036, type: 3}
+    volume: 0.3
+  - state: 3
+    clip: {fileID: 8300000, guid: a892759b16c11774290e607224336d3a, type: 3}
+    volume: 0.32
+  - state: 4
+    clip: {fileID: 8300000, guid: bf64b8963dbff0546b89f14666e46558, type: 3}
+    volume: 0.42
+  tensionLoop: {fileID: 8300000, guid: 8250da622a329044db0d9fdd2fb29002, type: 3}
+  tensionVolume: 0.3

@@ -26,6 +26,9 @@ namespace TLA.EditorTools.UI
             var catalog = AssetDatabase.LoadAssetAtPath<CaseCatalog>(CatalogPath);
             if (catalog == null) catalog = CreateCaseData();
             EnsureSuspectPersonalities();
+            EvidenceDataBuilder.EnsureEvidenceData();
+            InvestigationDataBuilder.EnsureInvestigationData();
+            CaseNarrativeBuilder.EnsureNarrativeData();
             return catalog;
         }
 

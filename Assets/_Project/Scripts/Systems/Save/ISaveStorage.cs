@@ -19,5 +19,15 @@ namespace TLA.Systems.Save
         bool TryRead(string key, out string content);
 
         void Delete(string key);
+
+        /// <summary>
+        /// The previous version of <paramref name="key"/> kept by the last write, if the storage keeps one.
+        /// Used when the current file is damaged. Default: no backups.
+        /// </summary>
+        bool TryReadBackup(string key, out string content)
+        {
+            content = null;
+            return false;
+        }
     }
 }

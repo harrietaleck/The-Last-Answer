@@ -8,7 +8,8 @@ namespace TLA.Gameplay.Environment
     /// optional electrical hum (fluorescent lights).
     ///
     /// PLACEHOLDER: when you have real ambience recordings, assign a looping clip to this
-    /// object's AudioSource and untick this component (or remove it).
+    /// object's AudioSource, add an AmbienceVolume component (so it follows the Ambience setting)
+    /// and untick this component (or remove it).
     ///
     /// How it works: Unity calls OnAudioFilterRead on the audio thread for every block of
     /// samples, and we fill the block with filtered random noise and a sine wave.
@@ -53,7 +54,7 @@ namespace TLA.Gameplay.Environment
         private void Update()
         {
             // Copy settings for the audio thread (Inspector changes apply live).
-            _volume = volume;
+            _volume = volume * TLA.Systems.Audio.AudioManager.AmbienceGain; // ambience setting, scene fades, pause dip
             _brightness = noiseBrightness;
             _hum = humFrequency;
             _humLevel = humLevel;

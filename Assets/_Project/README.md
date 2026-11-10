@@ -85,7 +85,7 @@ string menu = config.Game.Scenes.MainMenuScene;   // developer setting
 config.User.masterVolume = 0.5f;                 // player setting
 config.SaveUserSettings();                       // apply + write + UserSettingsChangedEvent
 ```
-**AI settings:** `GameConfig → AI` holds the provider mode (`Mock`/`Online`), the URL of *our own* backend and a timeout. There are **no vendor names, model names or API keys**, and there never should be. The GameConfig ships inside the build, where players can read it.
+**AI settings:** `GameConfig → AI` holds the default provider mode (`Mock`/`Online`), the URLs of *our own* backend (release and development), timeouts and reply limits. See `ONLINE_AI_GUIDE.md` in the repository root. There are **no vendor names, model names or API keys**, and there never should be. The GameConfig ships inside the build, where players can read it.
 
 ### Save / Load — `Systems/Save/*`
 - **`ISaveable`:** any system with progress to keep implements `SaveKey`, `CaptureState()` and `RestoreState()`, then calls `Services.Get<SaveService>().Register(this)`. The save service doesn't need to know what each system saves.
@@ -272,6 +272,26 @@ Full details, including **how to connect the UI to game systems**, are in **`UI_
 | `CaseSessionService` | Systems/Investigation | Current case, objective, evidence, notes; saved with the game |
 | `DialogueSession` | Systems/Dialogue | One suspect's interview: intent → rules → provider → history |
 | `IntentMatcher` / `ResponsePlanner` | Systems/Dialogue | What the player asked / what the suspect does (C# rules, never confess) |
-| `IAIProvider` → `MockAIProvider`, `OnlineAIProvider` | Systems/Dialogue | Turn the decision into words (offline now, backend later) |
+| `IAIProvider` → `MockAIProvider`, `OnlineAIProvider` | Systems/Dialogue | Turn the decision into words (offline, or online via our backend with mock fallback) |
 | `DialogueManager` | Gameplay/Interview | Connects interview events, the session and the UI in a scene |
 | `SuspectProfile` + `SuspectKnowledge` | Data/Cases | Who a suspect is; what they know, hide and lie about |
+
+## Evidence
+
+Evidence is authored as ScriptableObjects (`Data/Evidence`: `EvidenceDefinition`, `CaseFact`) and listed on the case. `Systems/Investigation/EvidenceService.cs` owns all the rules and progress: discover, collect, examine, present, connect, facts, saving. In the world, `EvidencePickup` opens the inspect view, and **I** opens the evidence inventory (also in the pause menu). Six test items for Case 0147 are in the Evidence Room. See `EVIDENCE_GUIDE.md` in the repository root.
+
+## Investigation logic
+
+Suspect statements (`Data/Investigation/SuspectStatement`) carry authored contradiction rules. `Systems/Investigation/ContradictionChecker.cs` compares a statement with evidence deterministically: **valid** only when the rule's evidence is collected and every required fact is confirmed. `InvestigationService` records statements, applies challenge outcomes after the suspect replies, and tracks observations and progress. In interviews, **CHALLENGE STATEMENT** picks a statement and the evidence; **J** opens the case notebook (statements, facts, observations, compare). See `INVESTIGATION_GUIDE.md` in the repository root.
+
+## Cases and progression
+
+Each case is one data-driven `CaseDefinition`: summary, crime, victim, suspects, witnesses, timeline, evidence, facts, statements, objectives, conclusions, endings and writer's solution notes. `Systems/Cases/CaseProgressService.cs` tracks objectives (completed automatically from game state), suspects questioned, contradictions, decisions and status, and picks the ending when the case is closed. `CaseValidator` checks every case. Case systems implement `ICaseScopedService`, so the GameManager never names a case. Tools: The Last Answer → Cases → New Case / Validate All Cases. See `CASE_AUTHORING_GUIDE.md` in the repository root.
+
+## Save and load
+
+Three manual slots plus an autosave (`save_0..2.json`, `save_auto.json`), each with a `.bak` backup. Format version 2: a header with a summary, plus a SHA-256 checksum over the sections. Loads are all-or-nothing, with rollback; damaged files fall back to the backup; older versions are migrated. Everything is saved, including interviews (history and suspect state) and the player's position. Save/Load screens are in the pause menu; Continue and Load are on the main menu. See `SAVE_SYSTEM_GUIDE.md` in the repository root.
+
+## Audio and atmosphere
+
+`Systems/Audio/AudioManager.cs` (on the GameManager object) plays effects from a fixed voice pool, with per-cue cooldowns, copy limits and priority stealing. It crossfades music by game state, runs an interrogation tension layer that follows the suspect's composure, and reacts to game events. All clips are mapped in `Data/Settings/AudioLibrary.asset`, so swap the generated placeholders (`Audio/Placeholder`) for your own there. Volumes: Master, Music, Effects, Ambience in Settings. Transitions: scene fade-out before loads, dialogue lines fade in, an evidence presentation card, and a staged ending reveal. See `AUDIO_GUIDE.md` in the repository root.

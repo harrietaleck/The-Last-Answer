@@ -129,7 +129,7 @@ If you're about to write `FindObjectOfType<SomeUIScript>()` from gameplay code, 
    │                          lie / deflect / unknown), repeat, follow-up, pressured answer, admission
    │                          when contradicted, denial; and how composure changes
    ▼ ③ DialogueContext        suspect + knowledge + question + plan + history + evidence shown + composure
-   ▼ ④ IAIProvider            WORDS only (MockAIProvider now; OnlineAIProvider later; mock = fallback)
+   ▼ ④ IAIProvider            WORDS only (MockAIProvider now; OnlineAIProvider via your backend; mock = fallback)
    ▼ ⑤ DialogueSession        applies the state change, records history
    ▼ ⑥ DialogueManager        publishes lines, suggestions, errors → dialogue screen; notes → notebook
 ```
@@ -186,14 +186,9 @@ If you're about to write `FindObjectOfType<SomeUIScript>()` from gameplay code, 
 
 ---
 
-## 8. Switching to an online AI later
+## 8. Online AI
 
-1. Build the backend from `THE_LAST_ANSWER_DEVELOPMENT_PLAN.md` §9. It receives `POST {base}/v1/dialogue` with the suspect's personality, the **reply kind**, the topic's **stance**, the **allowed lines**, the evidence shown and recent history. It returns `{"text": "...", "narration": "..."}`.
-2. Set **GameConfig → AI → Backend Base Url** and **Request Timeout**.
-3. Set the player's **AI mode** to Online (a Settings option can be added later; the field is `UserSettings.aiMode`).
-4. Nothing else changes: same rules, same UI. On timeout or error the mock answers instead, and a warning is logged.
-
-The game never contains an API key or a model name; both live on the server.
+Online dialogue is built (Stage 6): Settings → DIALOGUE → **AI DIALOGUE** switches between offline (scripted) and online. The game only talks to your own backend (`/Backend`), never to an AI vendor, and any failure falls back to the mock. See **[ONLINE_AI_GUIDE.md](ONLINE_AI_GUIDE.md)** for the security model, the request format, reliability, and the service options and costs.
 
 ---
 

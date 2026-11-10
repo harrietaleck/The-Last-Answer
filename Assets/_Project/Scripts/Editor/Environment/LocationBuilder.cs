@@ -39,6 +39,7 @@ namespace TLA.EditorTools.Environment
         public static void BuildAll()
         {
             UI.CaseDataBuilder.EnsureCaseData();
+            Audio.PlaceholderAudioGenerator.EnsureAll(); // placeholder sounds + AudioLibrary (only what's missing)
             RenderPipelineSetup.Run();
             GameObject gameUi = UI.UIScreensBuilder.BuildPrefabs();
             UpdatePlayerPrefab();
@@ -70,6 +71,7 @@ namespace TLA.EditorTools.Environment
         public static void BuildUI()
         {
             UI.CaseDataBuilder.EnsureCaseData();
+            Audio.PlaceholderAudioGenerator.EnsureAll();
             GameObject gameUi = UI.UIScreensBuilder.BuildPrefabs();
             UpdatePlayerPrefab();
             MainMenuBuilder.Build();
@@ -87,6 +89,8 @@ namespace TLA.EditorTools.Environment
             try
             {
                 if (root.GetComponent<PlayerSpawnPlacement>() == null) root.AddComponent<PlayerSpawnPlacement>();
+                if (root.GetComponent<TLA.Gameplay.Player.PlayerSaveLocator>() == null) root.AddComponent<TLA.Gameplay.Player.PlayerSaveLocator>(); // saved position
+                if (root.GetComponent<TLA.Gameplay.Player.PlayerFootsteps>() == null) root.AddComponent<TLA.Gameplay.Player.PlayerFootsteps>();
 
                 // The HUD is now global (UI_GameRoot in Bootstrap), so the prefab's own HUD canvas goes.
                 Transform oldHud = root.transform.Find("HUD");

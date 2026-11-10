@@ -14,7 +14,7 @@ namespace TLA.Gameplay.Player
     /// Bindings live in Assets/_Project/Data/Settings/PlayerControls.inputactions:
     ///   "Player" map:    Move (WASD/arrows), Look (mouse), Run (Shift), Crouch (C / Ctrl), Interact (E)
     ///   "Interview" map: NextShot (Tab), Leave (E), used while seated at the interview table
-    ///   "Global" map:    Pause (Esc), Notebook (J), always active, so you can un-pause
+    ///   "Global" map:    Pause (Esc), Notebook (J), Evidence (I), always active, so you can un-pause
     /// Double-click that asset to change keys; no code changes needed.
     ///
     /// It follows the game state:
@@ -42,6 +42,7 @@ namespace TLA.Gameplay.Player
         private InputAction _leave;
         private InputAction _pause;
         private InputAction _notebook;
+        private InputAction _evidence;
         private GameState _state = GameState.Investigating;
         private bool _typing;
         private bool _ready;
@@ -101,6 +102,7 @@ namespace TLA.Gameplay.Player
             _leave = _interviewMap.FindAction("Leave", true);
             _pause = _globalMap.FindAction("Pause", true);
             _notebook = _globalMap.FindAction("Notebook", true);
+            _evidence = _globalMap.FindAction("Evidence", true);
             _ready = true;
         }
 
@@ -111,6 +113,7 @@ namespace TLA.Gameplay.Player
             _globalMap.Enable();
             _pause.performed += OnPausePerformed;
             _notebook.performed += OnNotebookPerformed;
+            _evidence.performed += OnEvidencePerformed;
             EventBus.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
             EventBus.Subscribe<TextInputFocusChangedEvent>(OnTextInputFocusChanged);
 
@@ -125,6 +128,7 @@ namespace TLA.Gameplay.Player
 
             _pause.performed -= OnPausePerformed;
             _notebook.performed -= OnNotebookPerformed;
+            _evidence.performed -= OnEvidencePerformed;
             EventBus.Unsubscribe<GameStateChangedEvent>(OnGameStateChanged);
             EventBus.Unsubscribe<TextInputFocusChangedEvent>(OnTextInputFocusChanged);
             SetMaps(gameplay: false, interview: false);
@@ -166,6 +170,12 @@ namespace TLA.Gameplay.Player
         {
             if (_typing) return; // "j" typed into a text box
             EventBus.Publish(new NotebookRequestedEvent());
+        }
+
+        private void OnEvidencePerformed(InputAction.CallbackContext context)
+        {
+            if (_typing) return; // "i" typed into a text box
+            EventBus.Publish(new EvidenceInventoryRequestedEvent());
         }
 
         private void OnPausePerformed(InputAction.CallbackContext context)

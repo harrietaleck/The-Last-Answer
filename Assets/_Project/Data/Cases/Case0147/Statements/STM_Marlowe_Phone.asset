@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e17e14369517e942967bdcc399c4c48, type: 3}
+  m_Name: STM_Marlowe_Phone
+  m_EditorClassIdentifier: TLA.Data::TLA.Data.Investigation.SuspectStatement
+  statementId: STM_Marlowe_Phone
+  suspect: {fileID: 11400000, guid: f074a42f5aec06348bdd8190fbe4c43e, type: 2}
+  topicId: TOP_Phone
+  claim: My phone was switched off. I'd gone to bed.
+  source: Interview
+  recordedFromStart: 0
+  contradictions: []

@@ -13,8 +13,9 @@ namespace TLA.UI.Menus
     /// <summary>
     /// SETTINGS (one global instance in Bootstrap, opened from the main menu or the pause menu).
     ///   CONTROLS  Mouse sensitivity · Invert Y
-    ///   AUDIO     Master volume
+    ///   AUDIO     Master · Music · Effects (incl. UI) · Ambience
     ///   DISPLAY   Display mode · Resolution · Quality · V-Sync · Field of view · Brightness
+    ///   DIALOGUE  AI dialogue: Offline (scripted) or Online (via our backend; falls back to offline)
     ///
     /// Changes apply immediately (so the player sees the effect) and are written to settings.json
     /// when the screen closes. All values live in ConfigService.User; this screen only edits them.
@@ -24,16 +25,22 @@ namespace TLA.UI.Menus
         [SerializeField] private UISliderRow mouseSensitivity;
         [SerializeField] private UIOptionStepper invertY;
         [SerializeField] private UISliderRow masterVolume;
+        [SerializeField] private UISliderRow musicVolume;
+        [SerializeField] private UISliderRow effectsVolume;
+        [SerializeField] private UISliderRow ambienceVolume;
         [SerializeField] private UIOptionStepper displayMode;
         [SerializeField] private UIOptionStepper resolution;
         [SerializeField] private UIOptionStepper quality;
         [SerializeField] private UIOptionStepper vSync;
         [SerializeField] private UISliderRow fieldOfView;
         [SerializeField] private UISliderRow brightness;
+        [SerializeField] private UIOptionStepper aiMode;
         [SerializeField] private Button resetButton;
         [SerializeField] private Button backButton;
 
         private static readonly string[] OffOn = { "OFF", "ON" };
+        private static readonly string[] AIModeNames = { "OFFLINE (SCRIPTED)", "ONLINE" };
+        private static readonly string[] AIModeNamesUnavailable = { "OFFLINE (SCRIPTED)", "ONLINE (NOT SET UP)" };
         private static readonly string[] DisplayModeNames = { "FULLSCREEN", "BORDERLESS", "WINDOWED" };
         private static readonly int[] DisplayModeValues = { (int)FullScreenMode.ExclusiveFullScreen, (int)FullScreenMode.FullScreenWindow, (int)FullScreenMode.Windowed };
 
@@ -93,7 +100,10 @@ namespace TLA.UI.Menus
 
             mouseSensitivity.Bind("MOUSE SENSITIVITY", 0.1f, 3f, u.mouseSensitivity, v => v.ToString("0.00") + "×", v => Change(s => s.mouseSensitivity = v));
             invertY.Bind("INVERT LOOK", OffOn, u.invertY ? 1 : 0, i => Change(s => s.invertY = i == 1));
-            masterVolume.Bind("MASTER VOLUME", 0f, 1f, u.masterVolume, v => Mathf.RoundToInt(v * 100f) + "%", v => Change(s => s.masterVolume = v));
+            masterVolume.Bind("MASTER VOLUME", 0f, 1f, u.masterVolume, Percent, v => Change(s => s.masterVolume = v));
+            if (musicVolume != null) musicVolume.Bind("MUSIC", 0f, 1f, u.musicVolume, Percent, v => Change(s => s.musicVolume = v));
+            if (effectsVolume != null) effectsVolume.Bind("EFFECTS", 0f, 1f, u.effectsVolume, Percent, v => Change(s => s.effectsVolume = v));
+            if (ambienceVolume != null) ambienceVolume.Bind("AMBIENCE", 0f, 1f, u.ambienceVolume, Percent, v => Change(s => s.ambienceVolume = v));
 
             int modeIndex = System.Array.IndexOf(DisplayModeValues, u.displayMode >= 0 ? u.displayMode : (int)Screen.fullScreenMode);
             displayMode.Bind("DISPLAY MODE", DisplayModeNames, Mathf.Max(0, modeIndex), i => Change(s => s.displayMode = DisplayModeValues[i]));
@@ -111,8 +121,15 @@ namespace TLA.UI.Menus
 
             vSync.Bind("V-SYNC", OffOn, u.vSync ? 1 : 0, i => Change(s => s.vSync = i == 1));
             fieldOfView.Bind("FIELD OF VIEW", UserSettings.MinFieldOfView, UserSettings.MaxFieldOfView, u.fieldOfView, v => Mathf.RoundToInt(v) + "°", v => Change(s => s.fieldOfView = v), true);
+            if (aiMode != null)
+            {
+                bool available = TLA.Systems.Dialogue.AIProviderFactory.IsOnlineAvailable(_config.Game.AI, out _);
+                aiMode.Bind("AI DIALOGUE", available ? AIModeNames : AIModeNamesUnavailable, (int)u.aiMode, i => Change(s => s.aiMode = (AIProviderMode)i));
+            }
             brightness.Bind("BRIGHTNESS", -1f, 1f, u.brightness, v => (v >= 0 ? "+" : "") + Mathf.RoundToInt(v * 100f) + "%", v => Change(s => s.brightness = v));
         }
+
+        private static string Percent(float v) => Mathf.RoundToInt(v * 100f) + "%";
 
         private void BuildResolutions(out List<string> names, out int currentIndex)
         {

@@ -54,13 +54,16 @@ namespace TLA.Gameplay.Interaction
                 transform.localRotation = Quaternion.RotateTowards(transform.localRotation, _targetRotation, swingSpeed * Time.deltaTime);
         }
 
+        protected override TLA.Data.Audio.SoundCue InteractionSound => TLA.Data.Audio.SoundCue.None; // open/close sounds below
+
         protected override void OnInteract(PlayerInteractor interactor)
         {
             if (locked)
             {
-                // FUTURE: play a "rattle" sound / show a hint. The door stays shut.
+                PlaySound(TLA.Data.Audio.SoundCue.Interact, transform.position); // a dull click: it won't open
                 return;
             }
+            PlaySound(_isOpen ? TLA.Data.Audio.SoundCue.DoorClose : TLA.Data.Audio.SoundCue.DoorOpen, transform.position);
 
             if (_isOpen)
             {

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe0c7dc97d4c13549b32bda1d2e6290c, type: 3}
+  m_Name: FACT_VisitorWasWelcome
+  m_EditorClassIdentifier: TLA.Data::TLA.Data.Evidence.CaseFact
+  factId: FACT_VisitorWasWelcome
+  title: Reyes knew his visitor
+  description: Reyes made his visitor coffee. Whoever came that night was someone
+    he let in.
+  source: Scene photos and coffee cups, compared
+  reliability: 1
+  relatedEvidence:
+  - {fileID: 11400000, guid: b66faf2a46e656f49938b2a870eb1a65, type: 2}
+  - {fileID: 11400000, guid: ff79a5c28f2b2ca44bdc456536be03e9, type: 2}
+  relatedStatements: []
+  isKeyFact: 1

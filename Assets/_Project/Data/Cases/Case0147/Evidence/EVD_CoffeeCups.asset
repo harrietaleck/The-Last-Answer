@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df52e01750a2d85499dcca6bb2284122, type: 3}
+  m_Name: EVD_CoffeeCups
+  m_EditorClassIdentifier: TLA.Data::TLA.Data.Evidence.EvidenceDefinition
+  evidenceId: EVD_CoffeeCups
+  displayName: Two coffee cups
+  category: 2
+  description: Two cups bagged from the side table in the victim's office.
+  locationFound: "Evidence Room \xB7 shelf, box 0147-C"
+  interactionPrompt: Inspect evidence box
+  pages:
+  - 'ITEM 0147-C1  White cup with saucer. Coffee residue.
+
+    ITEM 0147-C2  White
+    cup, no saucer. Rinsed.'
+  image: {fileID: 0}
+  caption: Bagged from the side table in Reyes's office.
+  examinationNotes: 'Lab note attached: cup C1 carries the victim''s fingerprints.
+    Cup C2 was rinsed and wiped. No prints at all. That takes care.'
+  relatedFacts:
+  - {fileID: 11400000, guid: e2badae6c38c7ec45888b2e3bebed0cc, type: 2}
+  collectable: 1
+  noteOnCollect: 
+  objectiveOnCollect: 
+  discovery:
+    requiresCollected: []
+    requiresExamined:
+    - {fileID: 11400000, guid: b66faf2a46e656f49938b2a870eb1a65, type: 2}
+    requiresFacts: []
+    hiddenUntilAvailable: 0
+    lockedPrompt: Check evidence boxes
+    lockedHint: Rows of sealed evidence boxes. Study the crime scene photos first
+      to know which one matters.
+  connections: []

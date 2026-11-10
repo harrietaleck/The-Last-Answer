@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df52e01750a2d85499dcca6bb2284122, type: 3}
+  m_Name: EVD_KeycardLog
+  m_EditorClassIdentifier: TLA.Data::TLA.Data.Evidence.EvidenceDefinition
+  evidenceId: EVD_KeycardLog
+  displayName: Building access log
+  category: 0
+  description: The building's door and alarm log for the night of the 14th.
+  locationFound: "Evidence Room \xB7 filing cabinet"
+  interactionPrompt: Read access log
+  pages:
+  - "18 HARLOW STREET  \xB7  ACCESS LOG  \xB7  14th\n\n17:58   Card 0112 (N. Hayes)      
+    exit\n18:40   Card 0104 (E. Marlowe)     exit\n19:10   Alarm armed               
+    D. Reyes\n21:38   MASTER CODE                lobby door, alarm disarmed\n23:47  
+    Card 0112 (N. Hayes)       lobby door\n\nNo entries for card 0131 (V. Kim)."
+  image: {fileID: 0}
+  caption: 
+  examinationNotes: Nobody used a key card between 18:40 and 23:47. At 21:38 someone
+    entered the master code, which also disarmed the alarm. Only the partners and
+    the office manager are given that code.
+  relatedFacts:
+  - {fileID: 11400000, guid: 97dde97aa67e6b044a0aa5ab321077d4, type: 2}
+  collectable: 1
+  noteOnCollect: 
+  objectiveOnCollect: 
+  discovery:
+    requiresCollected: []
+    requiresExamined:
+    - {fileID: 11400000, guid: 16441292d66bc854e8b10de759925194, type: 2}
+    requiresFacts: []
+    hiddenUntilAvailable: 0
+    lockedPrompt: Search filing cabinet
+    lockedHint: Drawers full of old case files. You don't know what you're looking
+      for yet. Examine the case file first.
+  connections: []

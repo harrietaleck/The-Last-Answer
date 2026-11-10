@@ -1,0 +1,65 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df52e01750a2d85499dcca6bb2284122, type: 3}
+  m_Name: EVD_SaleContract
+  m_EditorClassIdentifier: TLA.Data::TLA.Data.Evidence.EvidenceDefinition
+  evidenceId: EVD_SaleContract
+  displayName: Draft sale agreement
+  category: 0
+  description: 'A confidential draft: Reyes planned to sell his majority share of
+    the firm.'
+  locationFound: "Evidence Room \xB7 open folder on the desk"
+  interactionPrompt: Read document
+  pages:
+  - "HEADS OF TERMS  \xB7  DRAFT 3  \xB7  STRICTLY CONFIDENTIAL\n\nBetween: Daniel
+    Reyes, holder of 60% of Reyes & Marlowe Architects Ltd\nand: Calder Holdings
+    plc\n\nCalder Holdings to acquire Mr Reyes's entire holding. Completion planned
+    for the end of the month."
+  - '4. MANAGEMENT
+
+    On completion, Calder Holdings will appoint the board. The
+    position of the remaining partner (E. Marlowe) will be reviewed within 12 months.
+
+
+    Signed 
+    D. Reyes ..................  (unsigned)
+
+    Signed for Calder Holdings .................. 
+    (unsigned)
+
+
+    In the margin, handwritten: "Tell E. after the 20th."'
+  image: {fileID: 0}
+  caption: 
+  examinationNotes: 'The margin note is in Reyes''s handwriting: "Tell E. after the
+    20th." He was keeping the sale from Marlowe. There''s a coffee ring on the last
+    page.'
+  relatedFacts:
+  - {fileID: 11400000, guid: 877c7a9cbda8bd742ae8651f51b8e454, type: 2}
+  collectable: 1
+  noteOnCollect: 
+  objectiveOnCollect: 
+  discovery:
+    requiresCollected:
+    - {fileID: 11400000, guid: 16441292d66bc854e8b10de759925194, type: 2}
+    requiresExamined: []
+    requiresFacts: []
+    hiddenUntilAvailable: 0
+    lockedPrompt: Look through paperwork
+    lockedHint: Loose paperwork from the firm. Read the case file first so you know
+      what matters.
+  connections:
+  - other: {fileID: 11400000, guid: 16441292d66bc854e8b10de759925194, type: 2}
+    explanation: The case file names Marlowe as Reyes's partner. If the sale went
+      through, Calder Holdings would review his position. He stood to lose the firm
+      he co-founded.
+    establishesFact: {fileID: 11400000, guid: f52a4a2e757693a459496afe385dc39c, type: 2}

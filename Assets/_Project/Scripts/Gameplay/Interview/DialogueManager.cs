@@ -20,28 +20,44 @@ namespace TLA.Gameplay.Interview
     /// to a <see cref="DialogueSession"/> per suspect, and publishes the results back
     /// (lines, "thinking", suggestions, errors). It contains no dialogue rules itself.
     ///
-    /// - Provider: chosen by <see cref="AIProviderFactory"/> from the player's AI mode setting.
-    ///   Online failures fall back to the mock automatically.
+    /// - Provider: chosen by <see cref="AIProviderFactory"/> from the player's AI mode setting,
+    ///   re-checked before every turn (switching Mock/Online in Settings applies immediately).
+    ///   Online failures fall back to the mock automatically, with a one-off notification.
     /// - History persists while the game runs: leave the room and come back, and the conversation
     ///   is still there (cleared when a new case starts).
     /// - Notable answers are written to the investigation notebook so they can be reviewed later.
+    /// - Statements the suspect makes are recorded with the InvestigationService. Challenges (statement +
+    ///   evidence) are judged by its ContradictionChecker BEFORE the suspect answers; the outcome is
+    ///   applied only after a reply succeeds. The dialogue provider never decides a contradiction.
     /// </summary>
     public sealed class DialogueManager : MonoBehaviour
     {
         [Tooltip("Fake thinking time range for the mock provider, in milliseconds.")]
         [SerializeField] private Vector2Int mockThinkingMs = new Vector2Int(700, 1500);
 
-        [Tooltip("Give up on a reply after this many seconds (online provider); the mock then answers.")]
-        [SerializeField] private float timeoutSeconds = 10f;
+        [Tooltip("Safety net: cancel a turn after this many seconds if the provider never returns. Online requests also have their own timeout (GameConfig → AI).")]
+        [SerializeField] private float timeoutSeconds = 13f;
 
-        // Sessions survive scene changes for the current run (keyed by suspect id).
+        // Fallback store when the game systems aren't running (e.g. a test scene). Normally interviews
+        // live in the InterviewService, which also saves them with the game.
         private static readonly Dictionary<string, DialogueSession> Sessions = new Dictionary<string, DialogueSession>();
+
+        // One provider shared by all interviews, so the online provider's "paused after failures" state carries over.
+        private static IAIProvider _provider;
+        private static string _providerKey;
+        private static bool _fallbackNotified;
 
         private DialogueSession _session;
         private CancellationTokenSource _cts;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics() => Sessions.Clear();
+        private static void ResetStatics()
+        {
+            Sessions.Clear();
+            _provider = null;
+            _providerKey = null;
+            _fallbackNotified = false;
+        }
 
         private void OnEnable()
         {
@@ -49,6 +65,7 @@ namespace TLA.Gameplay.Interview
             EventBus.Subscribe<InterviewEndedEvent>(OnInterviewEnded);
             EventBus.Subscribe<PlayerQuestionSubmittedEvent>(OnQuestion);
             EventBus.Subscribe<PlayerPresentedEvidenceEvent>(OnEvidence);
+            EventBus.Subscribe<PlayerChallengedStatementEvent>(OnChallenge);
             EventBus.Subscribe<CaseStartedEvent>(OnCaseStarted);
         }
 
@@ -58,6 +75,7 @@ namespace TLA.Gameplay.Interview
             EventBus.Unsubscribe<InterviewEndedEvent>(OnInterviewEnded);
             EventBus.Unsubscribe<PlayerQuestionSubmittedEvent>(OnQuestion);
             EventBus.Unsubscribe<PlayerPresentedEvidenceEvent>(OnEvidence);
+            EventBus.Unsubscribe<PlayerChallengedStatementEvent>(OnChallenge);
             EventBus.Unsubscribe<CaseStartedEvent>(OnCaseStarted);
             Cancel();
         }
@@ -65,7 +83,7 @@ namespace TLA.Gameplay.Interview
         /// <summary>The active session (for tests and debugging).</summary>
         public DialogueSession CurrentSession => _session;
 
-        private void OnCaseStarted(CaseStartedEvent evt) => Sessions.Clear();
+        private void OnCaseStarted(CaseStartedEvent evt) => Sessions.Clear(); // the InterviewService resets itself per case
 
         private void OnInterviewStarted(InterviewStartedEvent evt)
         {
@@ -75,9 +93,19 @@ namespace TLA.Gameplay.Interview
                 return;
             }
 
-            if (!Sessions.TryGetValue(evt.Suspect.suspectId, out _session))
+            DialogueSession Create() => new DialogueSession(evt.Suspect, CurrentProvider(), new MockAIProvider(mockThinkingMs.x, mockThinkingMs.y))
             {
-                _session = new DialogueSession(evt.Suspect, CreateProvider(), new MockAIProvider(mockThinkingMs.x, mockThinkingMs.y));
+                // Contradictions are decided by the investigation system (see OnEvidence / OnChallenge).
+                DetectContradictionsOnPresent = !Services.TryGet(out GameManager g) || g.Investigation == null
+            };
+
+            if (Services.TryGet(out InterviewService interviews))
+            {
+                _session = interviews.GetOrCreate(evt.Suspect, Create); // saved interviews resume here
+            }
+            else if (!Sessions.TryGetValue(evt.Suspect.suspectId, out _session))
+            {
+                _session = Create();
                 Sessions[evt.Suspect.suspectId] = _session;
             }
 
@@ -120,11 +148,59 @@ namespace TLA.Gameplay.Interview
         private void OnEvidence(PlayerPresentedEvidenceEvent evt)
         {
             if (_session == null) return;
+
+            // Showing evidence that VALIDLY contradicts something this suspect said counts as challenging it.
+            if (Services.TryGet(out GameManager game) && game.Investigation != null)
+            {
+                var evidence = game.Evidence.Find(evt.EvidenceId);
+                ContradictionResult contradiction = evidence != null ? game.Investigation.FindValidContradiction(_session.Suspect.suspectId, evidence) : null;
+                if (contradiction != null)
+                {
+                    RunChallenge(contradiction);
+                    return;
+                }
+            }
             RunTurn(ct => _session.PresentEvidenceAsync(evt.EvidenceId, evt.EvidenceName, Discovered(), ct));
         }
 
+        /// <summary>The player picked a statement and a piece of evidence: the checker decides, then the suspect answers.</summary>
+        private void OnChallenge(PlayerChallengedStatementEvent evt)
+        {
+            if (_session == null || !Services.TryGet(out GameManager game) || game.Investigation == null) return;
+
+            var statement = game.Investigation.FindStatement(evt.StatementId);
+            var evidence = game.Evidence.Find(evt.EvidenceId);
+            ContradictionResult result = game.Investigation.Evaluate(statement, evidence);
+            switch (result.Outcome)
+            {
+                case ContradictionOutcome.Valid:
+                case ContradictionOutcome.Unproven:
+                case ContradictionOutcome.Invalid:
+                    RunChallenge(result);
+                    break;
+                default:
+                    EventBus.Publish(new DialogueErrorEvent(result.Explanation)); // not heard yet, not collected, already exposed
+                    break;
+            }
+        }
+
+        private void RunChallenge(ContradictionResult result)
+        {
+            ChallengeVerdict verdict = result.Outcome == ContradictionOutcome.Valid ? ChallengeVerdict.Valid
+                : result.Outcome == ContradictionOutcome.Unproven ? ChallengeVerdict.Unproven
+                : ChallengeVerdict.Invalid;
+
+            RunTurn(ct => _session.ChallengeAsync(result.Statement.topicId, result.Statement.claim, result.Evidence.evidenceId,
+                    result.Evidence.displayName, verdict, Discovered(), ct),
+                turn =>
+                {
+                    // Applied only once the suspect has answered (a failed reply changes nothing).
+                    if (Services.TryGet(out GameManager game) && game.Investigation != null) game.Investigation.ApplyChallenge(result);
+                });
+        }
+
         /// <summary>Runs one turn: shows the player's line and the thinking indicator, then the reply or an error.</summary>
-        private async void RunTurn(Func<CancellationToken, Task<DialogueTurn>> turnFactory)
+        private async void RunTurn(Func<CancellationToken, Task<DialogueTurn>> turnFactory, Action<DialogueTurn> onSuccess = null)
         {
             if (_session.IsBusy)
             {
@@ -133,6 +209,8 @@ namespace TLA.Gameplay.Interview
             }
 
             DialogueSession session = _session;
+            session.Provider = CurrentProvider();
+            if (Services.TryGet(out GameManager game) && game.Case.HasActiveCase) session.Case = game.Case.CurrentCase;
             Cancel();
             _cts = new CancellationTokenSource();
             _cts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
@@ -167,12 +245,28 @@ namespace TLA.Gameplay.Interview
                 return;
             }
 
-            if (turn.UsedFallback)
-                Debug.LogWarning("[Dialogue] Online provider failed; the offline mock answered instead.");
+            ReportProvider(session, turn);
 
             for (int i = shown; i < session.History.Count; i++) Publish(session.History[i]);
             RecordInNotebook(session, turn);
+            Services.TryGet(out GameManager g);
+            if (!string.IsNullOrEmpty(turn.Plan?.EvidenceId) && g != null)
+                g.Evidence.MarkPresented(turn.Plan.EvidenceId, session.Suspect.suspectId);
+            RecordStatements(session, turn);
+            EventBus.Publish(new SuspectComposureChangedEvent(session.Composure)); // tension audio follows composure
+            if (turn.PlayerMessage != null && g != null && g.Progress != null) g.Progress.MarkQuestioned(session.Suspect); // asked or showed something
+            onSuccess?.Invoke(turn);
             PublishSuggestions();
+        }
+
+        /// <summary>When the suspect answers a topic, the statements tied to it go into the notebook, with their words.</summary>
+        private static void RecordStatements(DialogueSession session, DialogueTurn turn)
+        {
+            KnowledgeTopic topic = turn.Plan?.Topic;
+            if (topic == null || turn.Responses.Count == 0 || !Services.TryGet(out GameManager game) || game.Investigation == null) return;
+            ResponseKind k = turn.Plan.Kind;
+            if (k != ResponseKind.TopicAnswer && k != ResponseKind.TopicPressured && k != ResponseKind.TopicRepeat && k != ResponseKind.TopicFollowUp) return;
+            game.Investigation.RecordStatementsForTopic(session.Suspect.suspectId, topic.topicId, turn.Responses[turn.Responses.Count - 1].Text);
         }
 
         private void PublishSuggestions()
@@ -208,17 +302,58 @@ namespace TLA.Gameplay.Interview
             return ids;
         }
 
-        private IAIProvider CreateProvider()
+        /// <summary>The provider for the player's current AI mode (cached; rebuilt when the mode or config changes).</summary>
+        private IAIProvider CurrentProvider()
         {
             AIProviderMode mode = AIProviderMode.Mock;
-            string url = "";
+            AIConfig ai = null;
             if (Services.TryGet(out ConfigService config))
             {
                 mode = config.User.aiMode;
-                url = config.Game.AI.BackendBaseUrl;
-                timeoutSeconds = config.Game.AI.RequestTimeoutSeconds;
+                ai = config.Game.AI;
+                timeoutSeconds = ai.RequestTimeoutSeconds + 3f;
             }
-            return AIProviderFactory.Create(mode, url, mockThinkingMs.x, mockThinkingMs.y);
+
+            string key = mode == AIProviderMode.Online && ai != null ? "online|" + ai.ActiveBackendUrl : "mock";
+            if (_provider == null || key != _providerKey)
+            {
+                _provider = AIProviderFactory.Create(mode, ai, mockThinkingMs.x, mockThinkingMs.y);
+                _providerKey = key;
+                _fallbackNotified = false;
+                if (mode == AIProviderMode.Online && _provider is MockAIProvider)
+                {
+                    AIProviderFactory.IsOnlineAvailable(ai, out string problem);
+                    Debug.LogWarning($"[Dialogue] Online mode selected but unavailable ({problem}). Using offline dialogue.");
+                }
+                else
+                {
+                    Debug.Log($"[Dialogue] Dialogue provider: {_provider.ProviderId}");
+                }
+            }
+            return _provider;
+        }
+
+        /// <summary>Logs online failures and tells the player once when offline dialogue takes over.</summary>
+        private static void ReportProvider(DialogueSession session, DialogueTurn turn)
+        {
+            if (session.Provider is MockAIProvider) return;
+
+            if (!turn.UsedFallback)
+            {
+                if (_fallbackNotified)
+                    EventBus.Publish(new NotificationEvent("ONLINE DIALOGUE", "Connection restored."));
+                _fallbackNotified = false;
+                return;
+            }
+
+            if (turn.ProviderFailure != AIFailureKind.Paused)
+                Debug.LogWarning($"[Dialogue] Online reply failed ({turn.ProviderFailure}: {turn.ProviderError}). The offline mock answered instead.");
+
+            if (!_fallbackNotified && turn.ProviderFailure != AIFailureKind.Cancelled)
+            {
+                _fallbackNotified = true;
+                EventBus.Publish(new NotificationEvent("ONLINE DIALOGUE UNAVAILABLE", "Using offline dialogue for now."));
+            }
         }
 
         private void Cancel()

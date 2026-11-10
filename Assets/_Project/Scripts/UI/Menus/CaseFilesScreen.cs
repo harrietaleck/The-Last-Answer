@@ -30,6 +30,7 @@ namespace TLA.UI.Menus
 
         private UIList<Button> _list;
         private CaseDefinition _selected;
+        private Button _selectedRow;
 
         /// <summary>Raised when the player leaves this screen (the main menu shows itself again).</summary>
         public event Action Closed;
@@ -68,16 +69,27 @@ namespace TLA.UI.Menus
                     ? $"CASE {c.caseNumber}   {c.title.ToUpperInvariant()}"
                     : $"CASE {c.caseNumber}   CLASSIFIED";
                 CaseDefinition captured = c;
+                if (row.TryGetComponent(out UIButtonStyle style)) style.SetMarked(false);
                 row.onClick.RemoveAllListeners();
-                row.onClick.AddListener(() => Select(captured));
-                first ??= c;
+                row.onClick.AddListener(() => Select(captured, row));
+                if (first == null)
+                {
+                    first = c;
+                    _selectedRow = row;
+                }
             }
 
-            Select(first);
+            Select(first, _selectedRow);
         }
 
-        private void Select(CaseDefinition c)
+        private void Select(CaseDefinition c, Button row)
         {
+            if (_selectedRow != null && _selectedRow.TryGetComponent(out UIButtonStyle previous))
+                previous.SetMarked(false);
+            _selectedRow = row;
+            if (row != null && row.TryGetComponent(out UIButtonStyle current))
+                current.SetMarked(true);
+
             _selected = c;
             if (c == null) return;
 

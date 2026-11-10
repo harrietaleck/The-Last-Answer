@@ -16,6 +16,8 @@ MonoBehaviour:
   caseNumber: 0147
   title: Silence on Harlow Street
   location: Harlow Street, Eastside
+  summary: Architect Daniel Reyes was found dead in his office on Harlow Street.
+    No forced entry, no alarm. Three people could get in, and one of them is lying.
   briefing: 'Daniel Reyes, 46, co-owner of Reyes & Marlowe Architects, was found
     dead in his office at 23:50 on the night of the 14th.
 
@@ -30,3 +32,383 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f074a42f5aec06348bdd8190fbe4c43e, type: 2}
   - {fileID: 11400000, guid: fd82df173c88f8141b94b4261c8dc510, type: 2}
   - {fileID: 11400000, guid: f1e8a9631610e3d4cba16b732c2167de, type: 2}
+  witnesses:
+  - {fileID: 11400000, guid: fd82df173c88f8141b94b4261c8dc510, type: 2}
+  crime:
+    crimeType: Homicide
+    date: Night of the 14th
+    timeOfDeath: 21:30 - 22:30 (pathologist's estimate)
+    location: Office of Reyes & Marlowe Architects, 3rd floor, 18 Harlow Street
+    causeOfDeath: Blunt-force injury to the head
+    weapon: Not recovered
+    discoveredBy: Nora Hayes, office manager, at 23:50. She called it in at 23:52.
+    details: No sign of forced entry and no struggle in the outer office. The building
+      alarm never went off.
+  victim:
+    name: Daniel Reyes
+    age: 46
+    occupation: Architect, co-owner of Reyes & Marlowe Architects
+    background: Founded the practice with Elliot Marlowe eighteen years ago. Known
+      for working late and keeping his business close. Divorced, no children.
+  timeline:
+  - time: 12th
+    description: Marlowe learns from Calder Holdings' lawyer that Reyes is selling
+      his share of the firm.
+    revealedBy: {fileID: 11400000, guid: e5122687f554ef84589ba61c8d8dd4b5, type: 2}
+    isKey: 1
+  - time: 17:58
+    description: Nora Hayes leaves the office (key card).
+    revealedBy: {fileID: 11400000, guid: 97dde97aa67e6b044a0aa5ab321077d4, type: 2}
+    isKey: 0
+  - time: 18:40
+    description: Elliot Marlowe leaves the office (key card).
+    revealedBy: {fileID: 11400000, guid: 97dde97aa67e6b044a0aa5ab321077d4, type: 2}
+    isKey: 0
+  - time: 19:10
+    description: Reyes, working late, arms the building alarm.
+    revealedBy: {fileID: 11400000, guid: 97dde97aa67e6b044a0aa5ab321077d4, type: 2}
+    isKey: 0
+  - time: 21:38
+    description: The master code opens the lobby door and disarms the alarm. No key
+      card is used.
+    revealedBy: {fileID: 11400000, guid: 97dde97aa67e6b044a0aa5ab321077d4, type: 2}
+    isKey: 1
+  - time: 21:40
+    description: A figure in a long dark coat walks into the lobby and straight to
+      the stairs.
+    revealedBy: {fileID: 11400000, guid: 347dcae623180054694ea33ecc909541, type: 2}
+    isKey: 1
+  - time: 21:40
+    description: Marlowe arrives at the office to see Reyes, by his own admission.
+    revealedBy: {fileID: 11400000, guid: 1dba268f356767242ae9e177b68af55c, type: 2}
+    isKey: 1
+  - time: 23:47
+    description: Hayes's key card opens the lobby door.
+    revealedBy: {fileID: 11400000, guid: 97dde97aa67e6b044a0aa5ab321077d4, type: 2}
+    isKey: 0
+  - time: 23:50
+    description: Hayes finds Reyes dead at his desk.
+    revealedBy: {fileID: 0}
+    isKey: 0
+  - time: 23:52
+    description: Hayes calls the police.
+    revealedBy: {fileID: 0}
+    isKey: 0
+  - time: 00:06
+    description: The first officer arrives at the scene.
+    revealedBy: {fileID: 0}
+    isKey: 0
+  evidence:
+  - {fileID: 11400000, guid: 16441292d66bc854e8b10de759925194, type: 2}
+  - {fileID: 11400000, guid: b66faf2a46e656f49938b2a870eb1a65, type: 2}
+  - {fileID: 11400000, guid: 49470ad0a151ed047aa18033f28d003a, type: 2}
+  - {fileID: 11400000, guid: 683c81159941de04487f30cff2078be4, type: 2}
+  - {fileID: 11400000, guid: ff79a5c28f2b2ca44bdc456536be03e9, type: 2}
+  - {fileID: 11400000, guid: 99869136fc61d1f42b123af6e02ea4cb, type: 2}
+  facts:
+  - {fileID: 11400000, guid: 5d24377e0865962428e263b1d476442b, type: 2}
+  - {fileID: 11400000, guid: 4b4bb222a9923df4f98ea8f17742221c, type: 2}
+  - {fileID: 11400000, guid: 5e013e8a921fc334db6b5c4d5e8ebe4d, type: 2}
+  - {fileID: 11400000, guid: 347dcae623180054694ea33ecc909541, type: 2}
+  - {fileID: 11400000, guid: 97dde97aa67e6b044a0aa5ab321077d4, type: 2}
+  - {fileID: 11400000, guid: e2badae6c38c7ec45888b2e3bebed0cc, type: 2}
+  - {fileID: 11400000, guid: 877c7a9cbda8bd742ae8651f51b8e454, type: 2}
+  - {fileID: 11400000, guid: 7dc6f627fea1d3440ab4b7eb0f81e026, type: 2}
+  - {fileID: 11400000, guid: a3b05a794729c994f92fcbbcad19654e, type: 2}
+  - {fileID: 11400000, guid: f52a4a2e757693a459496afe385dc39c, type: 2}
+  - {fileID: 11400000, guid: 1dba268f356767242ae9e177b68af55c, type: 2}
+  - {fileID: 11400000, guid: e5122687f554ef84589ba61c8d8dd4b5, type: 2}
+  statements:
+  - {fileID: 11400000, guid: c23b64e0f27ed104a9dcadc6b602a9bf, type: 2}
+  - {fileID: 11400000, guid: ae751470fcce88b448e43a36b4206f95, type: 2}
+  - {fileID: 11400000, guid: c8ff8ef238a474743a77a1949530d478, type: 2}
+  - {fileID: 11400000, guid: e86e81747c7b2414fb38d684bcc22f31, type: 2}
+  - {fileID: 11400000, guid: 5afed86ea084d2d42becc50b78b30236, type: 2}
+  objectives:
+  - objectiveId: OBJ_ReviewCaseFile
+    title: Review the case file
+    description: Read case file 0147 on the investigation desk in the Evidence Room.
+    optional: 0
+    prerequisites: []
+    completion:
+    - type: 0
+      evidence: {fileID: 11400000, guid: 16441292d66bc854e8b10de759925194, type: 2}
+      fact: {fileID: 0}
+      statement: {fileID: 0}
+      suspect: {fileID: 0}
+      id: 
+      choice: 
+  - objectiveId: OBJ_SearchEvidenceRoom
+    title: Search the Evidence Room
+    description: Study the scene photographs on the evidence board and the CCTV archive
+      on the laptop.
+    optional: 0
+    prerequisites:
+    - OBJ_ReviewCaseFile
+    completion:
+    - type: 0
+      evidence: {fileID: 11400000, guid: b66faf2a46e656f49938b2a870eb1a65, type: 2}
+      fact: {fileID: 0}
+      statement: {fileID: 0}
+      suspect: {fileID: 0}
+      id: 
+      choice: 
+    - type: 0
+      evidence: {fileID: 11400000, guid: 49470ad0a151ed047aa18033f28d003a, type: 2}
+      fact: {fileID: 0}
+      statement: {fileID: 0}
+      suspect: {fileID: 0}
+      id: 
+      choice: 
+  - objectiveId: OBJ_QuestionMarlowe
+    title: Question Elliot Marlowe
+    description: Marlowe is waiting in Interview Room 1. Hear his side of the night.
+    optional: 0
+    prerequisites:
+    - OBJ_ReviewCaseFile
+    completion:
+    - type: 5
+      evidence: {fileID: 0}
+      fact: {fileID: 0}
+      statement: {fileID: 0}
+      suspect: {fileID: 11400000, guid: f074a42f5aec06348bdd8190fbe4c43e, type: 2}
+      id: 
+      choice: 
+  - objectiveId: OBJ_TraceEntry
+    title: Find out who came in at 21:40
+    description: Someone walked into the lobby at 21:40. Work out how they got in,
+      and what that says about who they were.
+    optional: 0
+    prerequisites:
+    - OBJ_SearchEvidenceRoom
+    completion:
+    - type: 2
+      evidence: {fileID: 0}
+      fact: {fileID: 11400000, guid: 7dc6f627fea1d3440ab4b7eb0f81e026, type: 2}
+      statement: {fileID: 0}
+      suspect: {fileID: 0}
+      id: 
+      choice: 
+  - objectiveId: OBJ_BreakAlibi
+    title: Break Marlowe's alibi
+    description: He told officers he was at home all evening. Prove otherwise, then
+      confront him with it.
+    optional: 0
+    prerequisites:
+    - OBJ_QuestionMarlowe
+    - OBJ_TraceEntry
+    completion:
+    - type: 4
+      evidence: {fileID: 0}
+      fact: {fileID: 0}
+      statement: {fileID: 11400000, guid: c23b64e0f27ed104a9dcadc6b602a9bf, type: 2}
+      suspect: {fileID: 0}
+      id: 
+      choice: 
+  - objectiveId: OBJ_FindMotive
+    title: Find a motive
+    description: Why would anyone want Daniel Reyes dead? The firm's paperwork may
+      say.
+    optional: 0
+    prerequisites:
+    - OBJ_ReviewCaseFile
+    completion:
+    - type: 2
+      evidence: {fileID: 0}
+      fact: {fileID: 11400000, guid: f52a4a2e757693a459496afe385dc39c, type: 2}
+      statement: {fileID: 0}
+      suspect: {fileID: 0}
+      id: 
+      choice: 
+  - objectiveId: OBJ_TheVisitor
+    title: Work out who Reyes was expecting
+    description: The scene photos show two cups on the side table. Find out what
+      they mean.
+    optional: 1
+    prerequisites:
+    - OBJ_SearchEvidenceRoom
+    completion:
+    - type: 2
+      evidence: {fileID: 0}
+      fact: {fileID: 11400000, guid: a3b05a794729c994f92fcbbcad19654e, type: 2}
+      statement: {fileID: 0}
+      suspect: {fileID: 0}
+      id: 
+      choice: 
+  - objectiveId: OBJ_SaleAdmission
+    title: Make Marlowe admit he knew about the sale
+    description: He says the firm's finances were fine. Show him why that isn't true.
+    optional: 1
+    prerequisites:
+    - OBJ_QuestionMarlowe
+    - OBJ_FindMotive
+    completion:
+    - type: 4
+      evidence: {fileID: 0}
+      fact: {fileID: 0}
+      statement: {fileID: 11400000, guid: c8ff8ef238a474743a77a1949530d478, type: 2}
+      suspect: {fileID: 0}
+      id: 
+      choice: 
+  - objectiveId: OBJ_CloseCase
+    title: Close the case
+    description: When you're ready, open the notebook (J) and choose CLOSE THE CASE.
+      The decision is final.
+    optional: 0
+    prerequisites:
+    - OBJ_QuestionMarlowe
+    completion:
+    - type: 7
+      evidence: {fileID: 0}
+      fact: {fileID: 0}
+      statement: {fileID: 0}
+      suspect: {fileID: 0}
+      id: DEC_CloseCase
+      choice: 
+  conclusionUnlockedBy:
+  - type: 6
+    evidence: {fileID: 0}
+    fact: {fileID: 0}
+    statement: {fileID: 0}
+    suspect: {fileID: 0}
+    id: OBJ_QuestionMarlowe
+    choice: 
+  conclusionDecisionId: DEC_CloseCase
+  conclusions:
+  - conclusionId: CON_ChargeMarlowe
+    title: Charge Elliot Marlowe with murder
+    description: Reyes's partner of eighteen years. Make sure you can prove he was
+      there, and why.
+    accused: {fileID: 11400000, guid: f074a42f5aec06348bdd8190fbe4c43e, type: 2}
+  - conclusionId: CON_ChargeKim
+    title: Charge Victor Kim with murder
+    description: The junior architect Reyes fired two weeks ago, whose key card was
+      never cancelled.
+    accused: {fileID: 11400000, guid: f1e8a9631610e3d4cba16b732c2167de, type: 2}
+  - conclusionId: CON_ChargeHayes
+    title: Charge Nora Hayes with murder
+    description: The office manager who found the body and called it in.
+    accused: {fileID: 11400000, guid: fd82df173c88f8141b94b4261c8dc510, type: 2}
+  - conclusionId: CON_NoCharge
+    title: Charge no one
+    description: Not enough evidence to charge anyone. Marlowe goes home and the
+      case stays open.
+    accused: {fileID: 0}
+  endings:
+  - endingId: END_Solved
+    title: The Last Answer
+    outcome: 0
+    conclusionId: CON_ChargeMarlowe
+    conditions:
+    - type: 4
+      evidence: {fileID: 0}
+      fact: {fileID: 0}
+      statement: {fileID: 11400000, guid: c23b64e0f27ed104a9dcadc6b602a9bf, type: 2}
+      suspect: {fileID: 0}
+      id: 
+      choice: 
+    - type: 2
+      evidence: {fileID: 0}
+      fact: {fileID: 11400000, guid: f52a4a2e757693a459496afe385dc39c, type: 2}
+      statement: {fileID: 0}
+      suspect: {fileID: 0}
+      id: 
+      choice: 
+    - type: 2
+      evidence: {fileID: 0}
+      fact: {fileID: 11400000, guid: e2badae6c38c7ec45888b2e3bebed0cc, type: 2}
+      statement: {fileID: 0}
+      suspect: {fileID: 0}
+      id: 
+      choice: 
+    epilogue: 'Marlowe''s solicitor arrives talking about a misunderstanding between
+      partners. Then the file is laid out in order: the master code at 21:38, the
+      figure on camera at 21:40, the cup rinsed and wiped clean, the sale he''d known
+      about since the 12th.
+
+
+      He stops talking. Prosecutors charge Elliot Marlowe
+      with the murder of Daniel Reyes. He never confesses. He doesn''t have to.'
+  - endingId: END_WeakCase
+    title: A Thin File
+    outcome: 1
+    conclusionId: CON_ChargeMarlowe
+    conditions:
+    - type: 4
+      evidence: {fileID: 0}
+      fact: {fileID: 0}
+      statement: {fileID: 11400000, guid: c23b64e0f27ed104a9dcadc6b602a9bf, type: 2}
+      suspect: {fileID: 0}
+      id: 
+      choice: 
+    epilogue: 'Marlowe is charged. He lied about the night and he was there, and
+      the file proves that much. But without a motive on record, or anything to show
+      what happened in that room, his defence calls it a late visit between old partners
+      that ended in an argument.
+
+
+      The trial is months away, and the case is
+      weaker than it should be.'
+  - endingId: END_Collapsed
+    title: Released by Morning
+    outcome: 2
+    conclusionId: CON_ChargeMarlowe
+    conditions: []
+    epilogue: 'Marlowe''s alibi was never broken. His solicitor has him out within
+      hours: nothing places him on Harlow Street that night. The charge is dropped
+      before breakfast, and Marlowe now knows exactly what you have, and what you
+      don''t.'
+  - endingId: END_WrongKim
+    title: The Wrong Man
+    outcome: 2
+    conclusionId: CON_ChargeKim
+    conditions: []
+    epilogue: 'Victor Kim had a grudge and an old key card, and that''s all. The
+      access log shows his card was never used that night, and nothing puts him near
+      Harlow Street. The charge collapses.
+
+
+      Whoever was in that office at
+      21:40 has had time to get rid of everything that mattered.'
+  - endingId: END_WrongHayes
+    title: The Wrong Witness
+    outcome: 2
+    conclusionId: CON_ChargeHayes
+    conditions: []
+    epilogue: 'Nora Hayes''s card opened the lobby door at 23:47, three minutes before
+      she found the body and called it in. The pathologist puts the death between
+      21:30 and 22:30.
+
+
+      The charge doesn''t survive the first hearing, and
+      the real killer is still out there.'
+  - endingId: END_Unsolved
+    title: An Open File
+    outcome: 3
+    conclusionId: CON_NoCharge
+    conditions: []
+    epilogue: 'No charge is brought. The file on Daniel Reyes goes back into the
+      cabinet in the Evidence Room, still open.
+
+
+      Somewhere in the city, someone
+      knows exactly what happened at 18 Harlow Street, and is starting to believe
+      they got away with it.'
+  solutionNotes: 'THE TRUTH (writers only). Elliot Marlowe killed Daniel Reyes.
+
+    On
+    the 12th Marlowe learned from Calder Holdings'' lawyer that Reyes was selling
+    his 60% share, which would put Marlowe''s position ''under review''. On the 14th
+    Marlowe left work at 18:40 by key card. At 21:38 he came back and used the master
+    code instead of his card, so his card wouldn''t show; this disarmed the alarm
+    Reyes had set at 19:10. The lobby camera caught him at 21:40 in a long dark coat,
+    carrying the draft agreement in a flat folder. Reyes made them both coffee. They
+    argued about the sale; Marlowe struck him with a heavy object from the desk,
+    rinsed and wiped his own cup, took the weapon and left by the stairs around 22:15
+    (exits by the stairs aren''t logged). He ignored the calls on his phone that
+    night.
+
+    Under questioning he admits only the visit and the argument (''He
+    was alive when I walked out''), never the killing. Hayes is innocent: she left
+    at 17:58 and came back at 23:47 for her laptop, after the time of death. Kim
+    is innocent: his card was never used.'

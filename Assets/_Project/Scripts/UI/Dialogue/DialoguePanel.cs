@@ -56,6 +56,10 @@ namespace TLA.UI.Dialogue
         [SerializeField] private Button evidenceTemplate;
         [SerializeField] private Transform evidenceContainer;
         [SerializeField] private TMP_Text evidenceEmpty;
+        [SerializeField] private TMP_Text pickerTitle;
+
+        [Header("Challenge a statement")]
+        [SerializeField] private Button challengeButton;
 
         [Tooltip("Seconds an error message stays visible.")]
         [SerializeField] private float errorSeconds = 3.5f;
@@ -71,6 +75,12 @@ namespace TLA.UI.Dialogue
         private bool _interviewActive;
         private bool _thinking;
         private string _suspectDisplayName = "Suspect";
+        private string _suspectId;
+
+        // The picker lists evidence to show, statements to challenge, or evidence to challenge with.
+        private enum PickerMode { Present, ChooseStatement, ChooseChallengeEvidence }
+        private PickerMode _pickerMode;
+        private string _challengeStatementId;
 
         protected override void Awake()
         {
@@ -79,6 +89,7 @@ namespace TLA.UI.Dialogue
             _suggestions = new UIList<Button>(suggestionTemplate, suggestionContainer);
             _evidenceButtons = new UIList<Button>(evidenceTemplate, evidenceContainer);
             presentEvidenceButton.onClick.AddListener(ToggleEvidencePicker);
+            if (challengeButton != null) challengeButton.onClick.AddListener(ToggleChallengePicker);
             evidencePicker.SetActive(false);
             if (errorLabel != null) errorLabel.alpha = 0f;
             askButton.onClick.AddListener(SubmitTyped);
@@ -208,17 +219,57 @@ namespace TLA.UI.Dialogue
             _errorUntil = Time.unscaledTime + errorSeconds;
         }
 
-        private void ToggleEvidencePicker()
+        private void ToggleEvidencePicker() => TogglePicker(PickerMode.Present);
+
+        private void ToggleChallengePicker() => TogglePicker(PickerMode.ChooseStatement);
+
+        private void TogglePicker(PickerMode mode)
         {
-            bool open = !evidencePicker.activeSelf;
+            bool open = !evidencePicker.activeSelf || _pickerMode != mode;
             evidencePicker.SetActive(open);
-            if (open) BuildEvidenceList();
+            if (!open) return;
+            _pickerMode = mode;
+            if (mode == PickerMode.ChooseStatement) BuildStatementList();
+            else BuildEvidenceList();
+        }
+
+        /// <summary>Challenge step 1: the statements this suspect has made (from the investigation notebook).</summary>
+        private void BuildStatementList()
+        {
+            _evidenceButtons.Clear();
+            if (pickerTitle != null) pickerTitle.text = "CHALLENGE WHICH STATEMENT?";
+            int count = 0;
+            if (TLA.Core.Services.Services.TryGet(out GameManager game) && game.Investigation != null)
+            {
+                foreach (TLA.Data.Investigation.SuspectStatement s in game.Investigation.GetRecorded(_suspectId))
+                {
+                    if (game.Investigation.IsStatementResolved(s)) continue; // already exposed
+                    Button b = _evidenceButtons.Add();
+                    b.GetComponentInChildren<TMP_Text>().text = $"\"{s.claim}\"";
+                    string id = s.statementId;
+                    b.onClick.RemoveAllListeners();
+                    b.onClick.AddListener(() =>
+                    {
+                        _challengeStatementId = id;
+                        _pickerMode = PickerMode.ChooseChallengeEvidence;
+                        BuildEvidenceList();
+                    });
+                    count++;
+                }
+            }
+            if (evidenceEmpty != null)
+            {
+                evidenceEmpty.text = "No open statements to challenge. Ask questions first; what the suspect claims is recorded.";
+                evidenceEmpty.gameObject.SetActive(count == 0);
+            }
         }
 
         /// <summary>Lists the evidence the player has DISCOVERED (from CaseSessionService); clicking one presents it.</summary>
         private void BuildEvidenceList()
         {
             _evidenceButtons.Clear();
+            if (pickerTitle != null) pickerTitle.text = _pickerMode == PickerMode.ChooseChallengeEvidence ? "CHALLENGE IT WITH…" : "SHOW THE SUSPECT…";
+            if (evidenceEmpty != null) evidenceEmpty.text = "No evidence collected yet. Search the Evidence Room.";
             var session = TLA.Core.Services.Services.TryGet(out GameManager game) ? game.Case : null;
             int count = 0;
             if (session != null)
@@ -229,7 +280,11 @@ namespace TLA.UI.Dialogue
                     b.GetComponentInChildren<TMP_Text>().text = e.displayName;
                     string id = e.id, name = e.displayName;
                     b.onClick.RemoveAllListeners();
-                    b.onClick.AddListener(() => PresentEvidence(id, name));
+                    b.onClick.AddListener(() =>
+                    {
+                        if (_pickerMode == PickerMode.ChooseChallengeEvidence) Challenge(_challengeStatementId, id);
+                        else PresentEvidence(id, name);
+                    });
                     count++;
                 }
             }
@@ -245,6 +300,17 @@ namespace TLA.UI.Dialogue
             }
             evidencePicker.SetActive(false);
             EventBus.Publish(new PlayerPresentedEvidenceEvent(id, name));
+        }
+
+        private void Challenge(string statementId, string evidenceId)
+        {
+            if (_thinking)
+            {
+                ShowError($"Wait for {_suspectDisplayName} to answer.");
+                return;
+            }
+            evidencePicker.SetActive(false);
+            EventBus.Publish(new PlayerChallengedStatementEvent(statementId, evidenceId));
         }
 
         private void OnEndInterview()
@@ -265,6 +331,7 @@ namespace TLA.UI.Dialogue
         private void ShowProfile(SuspectProfile s)
         {
             _suspectDisplayName = s != null ? s.displayName : "Unknown";
+            _suspectId = s != null ? s.suspectId : null;
             portraitInitials.text = s != null ? s.Initials : "?";
             suspectName.text = _suspectDisplayName.ToUpperInvariant();
             suspectMeta.text = s != null ? $"{s.age}  ·  {s.occupation}" : "";
@@ -279,6 +346,7 @@ namespace TLA.UI.Dialogue
             if (thinkingLabel != null) thinkingLabel.text = $"{_suspectDisplayName.ToUpperInvariant()} IS THINKING";
             askButton.interactable = !thinking;
             presentEvidenceButton.interactable = !thinking;
+            if (challengeButton != null) challengeButton.interactable = !thinking;
             foreach (Button b in _suggestions.Items) b.interactable = !thinking;
         }
 

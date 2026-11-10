@@ -25,6 +25,15 @@ namespace TLA.Data.Config
         /// <summary>0 = silent, 1 = full volume.</summary>
         public float masterVolume = 1f;
 
+        /// <summary>Music (0-1, on top of master).</summary>
+        public float musicVolume = 0.7f;
+
+        /// <summary>Sound effects and UI sounds (0-1, on top of master).</summary>
+        public float effectsVolume = 0.9f;
+
+        /// <summary>Room tone and background ambience (0-1, on top of master).</summary>
+        public float ambienceVolume = 0.8f;
+
         // ---- Controls
         /// <summary>Multiplier for first-person mouse look.</summary>
         public float mouseSensitivity = 1f;
@@ -51,8 +60,8 @@ namespace TLA.Data.Config
         public int resolutionWidth = 0;
         public int resolutionHeight = 0;
 
-        // ---- AI (later stage)
-        /// <summary>Mock (offline, scripted) or Online (via our backend, later stage).</summary>
+        // ---- AI dialogue
+        /// <summary>Mock (offline, scripted) or Online (via our backend; falls back to Mock on any failure).</summary>
         public AIProviderMode aiMode = AIProviderMode.Mock;
 
         public static UserSettings CreateDefault(GameConfig config)
@@ -67,6 +76,9 @@ namespace TLA.Data.Config
         public void Sanitize()
         {
             masterVolume = Math.Clamp(masterVolume, 0f, 1f);
+            musicVolume = float.IsNaN(musicVolume) ? 0.7f : Math.Clamp(musicVolume, 0f, 1f);
+            effectsVolume = float.IsNaN(effectsVolume) ? 0.9f : Math.Clamp(effectsVolume, 0f, 1f);
+            ambienceVolume = float.IsNaN(ambienceVolume) ? 0.8f : Math.Clamp(ambienceVolume, 0f, 1f);
             mouseSensitivity = Math.Clamp(mouseSensitivity, 0.1f, 5f);
             fieldOfView = Math.Clamp(fieldOfView, MinFieldOfView, MaxFieldOfView);
             brightness = Math.Clamp(brightness, -1f, 1f);

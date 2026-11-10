@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 5489242414729533449}
   - component: {fileID: 2767104277985545622}
   - component: {fileID: 6323640779381730707}
+  - component: {fileID: 62765754300200616}
+  - component: {fileID: 4917597484499530082}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -117,6 +119,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93f6864a508c0d641bc7c94a6ccd9827, type: 3}
   m_Name: 
   m_EditorClassIdentifier: TLA.Gameplay::TLA.Gameplay.World.PlayerSpawnPlacement
+--- !u!114 &62765754300200616
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2301283141185081489}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e375a03f054701478df087d74a30770, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TLA.Gameplay::TLA.Gameplay.Player.PlayerSaveLocator
+--- !u!114 &4917597484499530082
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2301283141185081489}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcfae9f5ee30f454a89a2dbc9271ca17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TLA.Gameplay::TLA.Gameplay.Player.PlayerFootsteps
+  walkStride: 1.5
+  runStride: 2.1
+  crouchStride: 1
+  walkVolume: 0.7
+  runVolume: 0.9
+  crouchVolume: 0.35
 --- !u!1 &4098786794763493786
 GameObject:
   m_ObjectHideFlags: 0

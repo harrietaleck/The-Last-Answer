@@ -150,12 +150,28 @@ namespace TLA.Tests
         // ------------------------------------------------------------------ knowledge limits
 
         [Test]
-        public void UnknownTopic_SuspectDoesNotRevealAnything()
+        public void HowHeDied_MarloweClaimsNotToKnow_AndRevealsNothing()
         {
+            // Marlowe is the killer (see the case's solution notes): "I don't know" is a lie he keeps up.
             DialogueTurn t = Ask("How was he killed? What was the weapon?");
             Assert.AreEqual("TOP_Death", t.Plan.Topic.topicId);
-            Assert.AreEqual(TopicStance.Unknown, t.Plan.Topic.stance);
-            StringAssert.Contains("don't know", Said(t));
+            Assert.AreEqual(TopicStance.Lie, t.Plan.Topic.stance);
+            StringAssert.Contains("know", Said(t));
+            foreach (string secret in new[] { "blunt", "head", "weapon", "desk", "struck" })
+                StringAssert.DoesNotContain(secret, Said(t).ToLowerInvariant());
+        }
+
+        [Test]
+        public void UnknownStance_TopicWithoutAnswers_OnlyEverSaysIDontKnow()
+        {
+            var topic = new KnowledgeTopic { topicId = "TOP_X", stance = TopicStance.Unknown, answers = new string[0] };
+            var context = new DialogueContext { Suspect = _marlowe, Plan = new ResponsePlan { Kind = ResponseKind.TopicAnswer, Topic = topic } };
+            for (int turn = 0; turn < 3; turn++)
+            {
+                context.TurnNumber = turn;
+                string said = MockAIProvider.Compose(context).Text;
+                CollectionAssert.Contains(new[] { "I don't know anything about that.", "I honestly couldn't tell you.", "No idea. You'd have to ask someone else." }, said);
+            }
         }
 
         [Test]

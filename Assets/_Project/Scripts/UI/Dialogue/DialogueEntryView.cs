@@ -20,8 +20,35 @@ namespace TLA.UI.Dialogue
         [SerializeField] private Color secondaryText = new Color32(0xC2, 0xC5, 0xCA, 0xFF);
         [SerializeField] private Color mutedText = new Color32(0x6E, 0x73, 0x7A, 0xFF);
 
+        [Tooltip("Seconds for a new line to fade in. 0 = appear instantly.")]
+        [SerializeField] private float fadeInSeconds = 0.35f;
+
+        private CanvasGroup _group;
+        private float _fadeStart = -1f;
+
+        private void Awake()
+        {
+            if (!TryGetComponent(out _group)) _group = gameObject.AddComponent<CanvasGroup>();
+        }
+
+        private void Update()
+        {
+            if (_fadeStart < 0f || _group == null) return;
+            float t = (Time.unscaledTime - _fadeStart) / Mathf.Max(0.01f, fadeInSeconds);
+            _group.alpha = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t));
+            if (t >= 1f) _fadeStart = -1f;
+        }
+
         public void Set(DialogueSpeaker who, string speakerName, string text)
         {
+            // Each new line fades in gently (no movement, no typewriter: easy to read).
+            if (_group == null) Awake();
+            if (fadeInSeconds > 0f)
+            {
+                _group.alpha = 0f;
+                _fadeStart = Time.unscaledTime;
+            }
+
             switch (who)
             {
                 case DialogueSpeaker.Suspect:

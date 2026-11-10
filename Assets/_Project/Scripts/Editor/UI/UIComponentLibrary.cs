@@ -120,6 +120,7 @@ namespace TLA.EditorTools.UI
             var button = root.gameObject.AddComponent<Button>();
             button.targetGraphic = target;
             button.transition = Selectable.Transition.None; // UIButtonStyle handles the look
+            target.canvasRenderer.cullTransparentMesh = false; // invisible plates must still receive hover
             var style = root.gameObject.AddComponent<UIButtonStyle>();
             SetField(style, "label", label);
             SetField(style, "accentBar", bar);

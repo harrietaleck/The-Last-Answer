@@ -36,6 +36,7 @@ namespace TLA.UI.Components
         private void Awake()
         {
             slider.onValueChanged.AddListener(OnSliderChanged);
+            slider.onValueChanged.AddListener(_ => UISound.Play(TLA.Data.Audio.SoundCue.UISlider)); // rate-limited by its cooldown
         }
 
         private void OnDestroy()

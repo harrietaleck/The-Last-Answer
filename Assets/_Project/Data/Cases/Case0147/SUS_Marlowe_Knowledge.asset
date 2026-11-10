@@ -28,7 +28,9 @@ MonoBehaviour:
     - the 14th
     suggestedQuestion: Where were you on the night of the 14th?
     stance: 2
-    truth: Went to the office at 21:40 to confront Reyes; left around 22:15.
+    truth: Came back at 21:38 using the master code (not his card), argued with Reyes
+      about the sale and killed him; wiped his cup and left by the stairs around
+      22:15.
     answers:
     - I was at home. Alone. I already gave the officers a statement.
     - Home. I read, I had a drink, I went to bed early. It's not complicated.
@@ -125,8 +127,10 @@ MonoBehaviour:
     followUpAnswer: 
     pressuredAnswer: There was an offer on the table. Daniel wanted it. I didn't.
       That's all it was.
-    contradictedByEvidence: []
-    admissionAnswer: 
+    contradictedByEvidence:
+    - EVD_SaleContract
+    admissionAnswer: Yes. Daniel was selling his share to Calder. I found out on
+      the 12th, from their lawyer. Not from him.
     requiresTopic: TOP_Relationship
     requiresEvidence: 
     priority: 4
@@ -248,8 +252,8 @@ MonoBehaviour:
     - murdered
     - body
     suggestedQuestion: 
-    stance: 4
-    truth: 
+    stance: 2
+    truth: He killed Reyes with a heavy object from the desk and took it with him.
     answers:
     - I don't know. Nobody's told me how. I'm not sure I want to know.
     - I wasn't there when he was found. I don't know anything about how it happened.
@@ -296,6 +300,20 @@ MonoBehaviour:
     reaction: So you've read the file. Then you know I wasn't the only one with a
       key.
     composureImpact: 0
+  - evidenceId: EVD_KeycardLog
+    reaction: The master code. Daniel, Nora and I had it. And probably every contractor
+      who ever fixed the lifts.
+    composureImpact: 4
+  - evidenceId: EVD_CoffeeCups
+    reaction: Daniel drank coffee from morning to midnight. Two cups proves nothing.
+    composureImpact: 3
+  - evidenceId: EVD_SaleContract
+    reaction: Where did you get that? It's a draft. He never had my signature, and
+      he never would have.
+    composureImpact: 10
+  - evidenceId: EVD_CCTV
+    reaction: Someone in a dark coat. Half this city owns a dark coat.
+    composureImpact: 4
   greeting: Detective. I've already given a statement. I assume this won't take long.
   unknownQuestion:
   - I don't see what that has to do with Daniel.

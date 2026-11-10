@@ -1,6 +1,8 @@
 using System.IO;
 using TLA.UI.Components;
 using TLA.UI.Dialogue;
+using TLA.UI.Evidence;
+using TLA.UI.Investigation;
 using TLA.UI.HUD;
 using TLA.UI.Menus;
 using TLA.UI.Theme;
@@ -16,7 +18,8 @@ namespace TLA.EditorTools.UI
     /// <summary>
     /// Builds the game's screens from the theme and the component prefabs:
     ///   UI_GameRoot prefab (lives in Bootstrap, persists across scenes):
-    ///       HUD · Notifications · Dialogue · Pause menu + Notebook · Settings
+    ///       HUD · Notifications · Dialogue · Pause menu · Evidence inventory · Case notebook · Inspect view ·
+    ///       Close the case · Contradiction feedback · Ending · Settings
     ///   Main menu canvas (inside the MainMenu scene): main panel + Case Files
     /// Menu: The Last Answer → UI → Rebuild UI.
     /// </summary>
@@ -61,6 +64,14 @@ namespace TLA.EditorTools.UI
             BuildHud(root);
             BuildDialogue(root);
             BuildPauseMenu(root);
+            BuildEvidenceScreen(root);
+            BuildNotebookScreen(root);
+            BuildConclusionScreen(root); // opened from the notebook
+            BuildInspectScreen(root);   // above the inventory (opened from it)
+            BuildContradictionFeedback(root); // banner
+            BuildEvidencePresentationCard(root);
+            BuildEndingScreen(root);     // covers everything but Settings
+            BuildSaveSlotScreen(root);   // save / load, from the pause menu and the main menu
             BuildSettings(root); // last = drawn on top
 
             Directory.CreateDirectory(Path.GetDirectoryName(GameRootPath));
@@ -217,11 +228,16 @@ namespace TLA.EditorTools.UI
             Layout(error, -1, 20);
 
             // Present evidence: a button that opens a short list of discovered evidence.
-            Button present = SpawnButton(ActionButton, column, "PRESENT EVIDENCE");
-            Layout(present, -1, 46);
+            RectTransform actionRow = Rect("EvidenceActions", column);
+            HorizontalLayoutGroup actionLayout = HLayout(actionRow, 10);
+            actionLayout.childForceExpandWidth = true;
+            Button present = SpawnButton(ActionButton, actionRow, "PRESENT EVIDENCE");
+            Layout(present, -1, 46, 1);
+            Button challenge = SpawnButton(ActionButton, actionRow, "CHALLENGE STATEMENT");
+            Layout(challenge, -1, 46, 1);
             RectTransform picker = Rect("EvidencePicker", column);
             VLayout(picker, 6, new RectOffset(0, 0, 0, 4));
-            Label(picker, "SHOW THE SUSPECT…");
+            TextMeshProUGUI pickerTitle = Label(picker, "SHOW THE SUSPECT…");
             TextMeshProUGUI evidenceEmpty = Text(picker, "Empty", "No evidence discovered yet. Search the Evidence Room.", 16, Theme.textMuted, TextAlignmentOptions.TopLeft, FontStyles.Italic);
             RectTransform evidenceList = Rect("Items", picker);
             VLayout(evidenceList, 6);
@@ -250,6 +266,8 @@ namespace TLA.EditorTools.UI
             SetField(panel, "evidenceTemplate", evidenceTemplate.GetComponent<Button>());
             SetField(panel, "evidenceContainer", evidenceList);
             SetField(panel, "evidenceEmpty", evidenceEmpty);
+            SetField(panel, "pickerTitle", pickerTitle);
+            SetField(panel, "challengeButton", challenge);
         }
 
         private static TMP_InputField InputField(Transform parent, string placeholderText)
@@ -297,11 +315,14 @@ namespace TLA.EditorTools.UI
             Text(left, "Title", "INVESTIGATION", 34, Theme.textPrimary, TextAlignmentOptions.TopLeft, FontStyles.Normal, 6, false);
             Spacer(left, 36);
             Button resume = SpawnButton(MenuButton, left, "RESUME");
+            Button notebookButton = SpawnButton(MenuButton, left, "NOTEBOOK");
+            Button evidence = SpawnButton(MenuButton, left, "EVIDENCE");
             Button settings = SpawnButton(MenuButton, left, "SETTINGS");
             Button save = SpawnButton(MenuButton, left, "SAVE INVESTIGATION");
+            Button load = SpawnButton(MenuButton, left, "LOAD INVESTIGATION");
             Button mainMenu = SpawnButton(MenuButton, left, "MAIN MENU");
             Button exit = SpawnButton(MenuButton, left, "EXIT GAME");
-            foreach (Button b in new[] { resume, settings, save, mainMenu, exit }) Layout(b, -1, 54);
+            foreach (Button b in new[] { resume, notebookButton, evidence, settings, save, load, mainMenu, exit }) Layout(b, -1, 54);
 
             // Right: notebook.
             RectTransform right = Region(Rect("Notebook", screen), 0.34f, 0.08f, 0.95f, 0.92f);
@@ -348,11 +369,466 @@ namespace TLA.EditorTools.UI
 
             SetField(pause, "notebook", notebook);
             SetField(pause, "resumeButton", resume);
+            SetField(pause, "evidenceButton", evidence);
+            SetField(pause, "notebookButton", notebookButton);
             SetField(pause, "settingsButton", settings);
             SetField(pause, "saveButton", save);
+            SetField(pause, "loadButton", load);
             SetField(pause, "mainMenuButton", mainMenu);
             SetField(pause, "exitButton", exit);
             SetField(pause, "firstSelected", resume.gameObject);
+        }
+
+        // ------------------------------------------------------------------ EVIDENCE INVENTORY
+
+        private static void BuildEvidenceScreen(Transform parent)
+        {
+            RectTransform screen = Stretch(Rect("EvidenceInventory", parent));
+            screen.gameObject.AddComponent<CanvasGroup>();
+            var inventory = screen.gameObject.AddComponent<EvidenceScreen>();
+            Scrim(screen, new Color(Theme.background.r, Theme.background.g, Theme.background.b, 0.94f));
+
+            // Left: list.
+            RectTransform left = Region(Rect("List", screen), 0f, 0f, 0.34f, 1f);
+            Image(left, Theme.panel);
+            VLayout(left, 8, new RectOffset(56, 36, 70, 48));
+            Label(left, "INVESTIGATION", Theme.accent);
+            Text(left, "Title", "EVIDENCE", 34, Theme.textPrimary, TextAlignmentOptions.TopLeft, FontStyles.Normal, 6, false);
+            TextMeshProUGUI count = Label(left, "0 COLLECTED");
+            Spacer(left, 8);
+            UIOptionStepper filter = Row<UIOptionStepper>(OptionStepper, left, "Filter");
+            Spacer(left, 4);
+            ScrollRect listScroll = ScrollList(left, "Items", 6, out RectTransform listContent);
+            Layout(listScroll, -1, -1, 1, 1);
+            GameObject itemTemplate = Spawn(ListButton, listContent, "ItemTemplate");
+            TextMeshProUGUI empty = Text(left, "Empty", "No evidence collected yet.", 17, Theme.textMuted, TextAlignmentOptions.TopLeft, FontStyles.Italic);
+            Text(left, "Hint", "[I]  CLOSE      [ESC]  RESUME", 13, Theme.textMuted, TextAlignmentOptions.TopLeft, FontStyles.Normal, 4, false);
+
+            // Right: detail view.
+            RectTransform right = Region(Rect("Detail", screen), 0.38f, 0.07f, 0.95f, 0.93f);
+            VLayout(right, 10);
+            RectTransform detail = Rect("DetailRoot", right);
+            VLayout(detail, 10);
+            Layout(detail, -1, -1, 1, 1);
+
+            TextMeshProUGUI category = Label(detail, "DOCUMENT", Theme.accent);
+            TextMeshProUGUI title = Text(detail, "EvidenceTitle", "Evidence", 40, Theme.textPrimary, TextAlignmentOptions.TopLeft, FontStyles.Normal, 1);
+            TextMeshProUGUI location = Label(detail, "FOUND");
+            TextMeshProUGUI description = Text(detail, "Description", "Description.", 20, Theme.textSecondary);
+            description.lineSpacing = 6f;
+            Divider(detail);
+
+            ScrollRect body = ScrollList(detail, "Body", 8, out RectTransform bodyContent);
+            Layout(body, -1, -1, 1, 1);
+            Label(bodyContent, "STATUS");
+            TextMeshProUGUI status = Text(bodyContent, "Status", "", 18, Theme.textSecondary);
+            status.lineSpacing = 8f;
+            Spacer(bodyContent, 6);
+            Label(bodyContent, "EXAMINATION");
+            TextMeshProUGUI examination = Text(bodyContent, "Examination", "", 18, Theme.textSecondary);
+            examination.lineSpacing = 6f;
+            Spacer(bodyContent, 6);
+            Label(bodyContent, "FACTS ESTABLISHED");
+            TextMeshProUGUI facts = Text(bodyContent, "Facts", "", 18, Theme.textSecondary);
+            facts.lineSpacing = 8f;
+            Spacer(bodyContent, 6);
+            Label(bodyContent, "CONNECTIONS");
+            TextMeshProUGUI connections = Text(bodyContent, "Connections", "", 18, Theme.textSecondary);
+            connections.lineSpacing = 6f;
+
+            TextMeshProUGUI connectHint = Text(right, "ConnectHint", "", 18, Theme.accent);
+            RectTransform buttons = Rect("Buttons", right);
+            HLayout(buttons, 12);
+            Button view = SpawnButton(ActionButton, buttons, "VIEW");
+            Layout(view, 150, 52);
+            Button examine = SpawnButton(ActionButton, buttons, "EXAMINE");
+            Layout(examine, 170, 52);
+            Button connect = SpawnButton(ActionButton, buttons, "CONNECT");
+            Layout(connect, 170, 52);
+            RectTransform gap = Rect("Gap", buttons);
+            Layout(gap, -1, 10, 1);
+            Button back = SpawnButton(ActionButton, buttons, "BACK");
+            Layout(back, 150, 52);
+
+            SetField(inventory, "filter", filter);
+            SetField(inventory, "countLabel", count);
+            SetField(inventory, "itemTemplate", itemTemplate.GetComponent<Button>());
+            SetField(inventory, "itemContainer", listContent);
+            SetField(inventory, "emptyLabel", empty);
+            SetField(inventory, "detailRoot", detail.gameObject);
+            SetField(inventory, "detailCategory", category);
+            SetField(inventory, "detailTitle", title);
+            SetField(inventory, "detailLocation", location);
+            SetField(inventory, "detailDescription", description);
+            SetField(inventory, "detailStatus", status);
+            SetField(inventory, "detailExamination", examination);
+            SetField(inventory, "detailFacts", facts);
+            SetField(inventory, "detailConnections", connections);
+            SetField(inventory, "connectHint", connectHint);
+            SetField(inventory, "viewButton", view);
+            SetField(inventory, "examineButton", examine);
+            SetField(inventory, "connectButton", connect);
+            SetField(inventory, "connectLabel", connect.GetComponentInChildren<TMP_Text>());
+            SetField(inventory, "backButton", back);
+            SetField(inventory, "firstSelected", back.gameObject);
+        }
+
+        // ------------------------------------------------------------------ INSPECT VIEW
+
+        private static void BuildInspectScreen(Transform parent)
+        {
+            RectTransform screen = Stretch(Rect("EvidenceInspect", parent));
+            screen.gameObject.AddComponent<CanvasGroup>();
+            var inspect = screen.gameObject.AddComponent<EvidenceInspectScreen>();
+            Scrim(screen, new Color(0, 0, 0, 0.86f));
+
+            RectTransform card = Place(Rect("Card", screen), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1120, 960));
+            Image(card, Theme.panel, true);
+            VLayout(card, 10, new RectOffset(56, 56, 40, 36));
+
+            TextMeshProUGUI category = Label(card, "DOCUMENT", Theme.accent);
+            TextMeshProUGUI title = Text(card, "EvidenceTitle", "Evidence", 36, Theme.textPrimary, TextAlignmentOptions.TopLeft, FontStyles.Normal, 1, false);
+            TextMeshProUGUI location = Label(card, "FOUND");
+            Spacer(card, 4);
+
+            // Content panel: an optional photo frame on top, then the page / description text.
+            RectTransform panel = Rect("Content", card);
+            Image panelImage = Image(panel, new Color(0.86f, 0.83f, 0.76f));
+            VLayout(panel, 14, new RectOffset(40, 40, 28, 28));
+            Layout(panel, -1, 470, 1);
+
+            RectTransform frame = Rect("PhotoFrame", panel);
+            Layout(frame, -1, 240, 1);
+            Image(frame, new Color(0.05f, 0.05f, 0.06f));
+            RectTransform photoRect = Stretch(Rect("Photo", frame), 8, 8, 8, 8);
+            Image photo = Image(photoRect, Color.white);
+            photo.preserveAspect = true;
+            TextMeshProUGUI placeholder = Text(frame, "Placeholder", "[ PHOTOGRAPH ]", 18, Theme.textMuted, TextAlignmentOptions.Center, FontStyles.Normal, 6, false);
+            Stretch(placeholder.rectTransform);
+
+            TextMeshProUGUI content = Text(panel, "Text", "Page text.", 20, new Color(0.13f, 0.12f, 0.11f));
+            content.lineSpacing = 6f;
+            Layout(content, -1, -1, 1, 1);
+
+            TextMeshProUGUI caption = Text(card, "Caption", "", 16, Theme.textSecondary, TextAlignmentOptions.TopLeft, FontStyles.Italic);
+
+            RectTransform pages = Rect("PageControls", card);
+            HLayout(pages, 12);
+            Button prev = SpawnButton(ActionButton, pages, "PREVIOUS");
+            Layout(prev, 150, 40);
+            TextMeshProUGUI pageIndicator = Text(pages, "PageIndicator", "PAGE 1 / 1", Theme.labelSize, Theme.textMuted, TextAlignmentOptions.Center, FontStyles.Normal, Theme.labelSpacing, false);
+            Layout(pageIndicator, -1, 40, 1);
+            Button next = SpawnButton(ActionButton, pages, "NEXT");
+            Layout(next, 150, 40);
+
+            Divider(card);
+            Label(card, "EXAMINATION");
+            TextMeshProUGUI examination = Text(card, "Examination", "", 18, Theme.textSecondary);
+            examination.lineSpacing = 6f;
+            Layout(examination, -1, -1, 1, 1, 60);
+
+            RectTransform buttons = Rect("Buttons", card);
+            HLayout(buttons, 12);
+            Button collect = SpawnButton(ActionButton, buttons, "COLLECT");
+            Layout(collect, 240, 52);
+            Button examine = SpawnButton(ActionButton, buttons, "EXAMINE");
+            Layout(examine, 180, 52);
+            RectTransform gap = Rect("Gap", buttons);
+            Layout(gap, -1, 10, 1);
+            Button close = SpawnButton(ActionButton, buttons, "CLOSE");
+            Layout(close, 160, 52);
+
+            SetField(inspect, "categoryLabel", category);
+            SetField(inspect, "title", title);
+            SetField(inspect, "location", location);
+            SetField(inspect, "contentPanel", panelImage);
+            SetField(inspect, "contentText", content);
+            SetField(inspect, "photoFrame", frame.gameObject);
+            SetField(inspect, "photo", photo);
+            SetField(inspect, "photoPlaceholder", placeholder);
+            SetField(inspect, "caption", caption);
+            SetField(inspect, "pageControls", pages.gameObject);
+            SetField(inspect, "previousPage", prev);
+            SetField(inspect, "nextPage", next);
+            SetField(inspect, "pageIndicator", pageIndicator);
+            SetField(inspect, "examinationText", examination);
+            SetField(inspect, "collectButton", collect);
+            SetField(inspect, "collectLabel", collect.GetComponentInChildren<TMP_Text>());
+            SetField(inspect, "examineButton", examine);
+            SetField(inspect, "closeButton", close);
+            SetField(inspect, "firstSelected", close.gameObject);
+        }
+
+        // ------------------------------------------------------------------ CASE NOTEBOOK
+
+        private static void BuildNotebookScreen(Transform parent)
+        {
+            RectTransform screen = Stretch(Rect("CaseNotebook", parent));
+            screen.gameObject.AddComponent<CanvasGroup>();
+            var notebook = screen.gameObject.AddComponent<NotebookScreen>();
+            Scrim(screen, new Color(Theme.background.r, Theme.background.g, Theme.background.b, 0.94f));
+
+            // Left: progress + page + list.
+            RectTransform left = Region(Rect("List", screen), 0f, 0f, 0.34f, 1f);
+            Image(left, Theme.panel);
+            VLayout(left, 8, new RectOffset(56, 36, 64, 44));
+            TextMeshProUGUI caseLabel = Label(left, "CASE", Theme.accent);
+            Text(left, "Title", "NOTEBOOK", 34, Theme.textPrimary, TextAlignmentOptions.TopLeft, FontStyles.Normal, 6, false);
+            Spacer(left, 4);
+            TextMeshProUGUI progress = Text(left, "Progress", "", 16, Theme.textSecondary);
+            progress.lineSpacing = 6f;
+            Spacer(left, 6);
+            UIOptionStepper page = Row<UIOptionStepper>(OptionStepper, left, "Page");
+            Spacer(left, 2);
+            ScrollRect listScroll = ScrollList(left, "Items", 6, out RectTransform listContent);
+            Layout(listScroll, -1, -1, 1, 1);
+            GameObject itemTemplate = Spawn(ListButton, listContent, "ItemTemplate");
+            TextMeshProUGUI empty = Text(left, "Empty", "", 17, Theme.textMuted, TextAlignmentOptions.TopLeft, FontStyles.Italic);
+            Text(left, "Hint", "[J]  CLOSE      [ESC]  RESUME", 13, Theme.textMuted, TextAlignmentOptions.TopLeft, FontStyles.Normal, 4, false);
+
+            // Right: detail, compare, observation input.
+            RectTransform right = Region(Rect("Detail", screen), 0.38f, 0.07f, 0.95f, 0.93f);
+            VLayout(right, 10);
+            RectTransform detail = Rect("DetailRoot", right);
+            VLayout(detail, 10);
+            Layout(detail, -1, -1, 1, 1);
+            TextMeshProUGUI detailLabel = Label(detail, "STATEMENT", Theme.accent);
+            TextMeshProUGUI detailTitle = Text(detail, "DetailTitle", "Title", 30, Theme.textPrimary, TextAlignmentOptions.TopLeft, FontStyles.Normal, 0);
+            Divider(detail);
+            ScrollRect bodyScroll = ScrollList(detail, "Body", 0, out RectTransform bodyContent);
+            Layout(bodyScroll, -1, -1, 1, 1);
+            TextMeshProUGUI body = Text(bodyContent, "BodyText", "", 18, Theme.textSecondary);
+            body.lineSpacing = 6f;
+
+            RectTransform compare = Rect("Compare", right);
+            VLayout(compare, 6);
+            Label(compare, "COMPARE WITH EVIDENCE");
+            ScrollRect compareScroll = ScrollList(compare, "EvidenceButtons", 4, out RectTransform compareContent);
+            Layout(compareScroll, -1, 190);
+            GameObject compareTemplate = Spawn(ListButton, compareContent, "CompareTemplate");
+            TextMeshProUGUI compareResult = Text(compare, "Result", "", 18, Theme.textSecondary);
+            Layout(compareResult, -1, -1, -1, -1, 48);
+
+            RectTransform obsRow = Rect("ObservationRow", right);
+            HLayout(obsRow, 10);
+            TMP_InputField obsInput = InputField(obsRow, "Write an observation…");
+            obsInput.gameObject.name = "ObservationInput";
+            obsInput.characterLimit = 300;
+            Layout(obsInput, -1, 52, 1);
+            Button add = SpawnButton(ActionButton, obsRow, "ADD");
+            Layout(add, 120, 52);
+
+            RectTransform buttons = Rect("Buttons", right);
+            HLayout(buttons, 12);
+            Button closeCase = SpawnButton(ActionButton, buttons, "CLOSE THE CASE");
+            Layout(closeCase, 260, 52);
+            RectTransform gap = Rect("Gap", buttons);
+            Layout(gap, -1, 10, 1);
+            Button back = SpawnButton(ActionButton, buttons, "BACK");
+            Layout(back, 150, 52);
+
+            SetField(notebook, "closeCaseButton", closeCase);
+            SetField(notebook, "caseLabel", caseLabel);
+            SetField(notebook, "progressText", progress);
+            SetField(notebook, "pageStepper", page);
+            SetField(notebook, "itemTemplate", itemTemplate.GetComponent<Button>());
+            SetField(notebook, "itemContainer", listContent);
+            SetField(notebook, "emptyLabel", empty);
+            SetField(notebook, "detailRoot", detail.gameObject);
+            SetField(notebook, "detailLabel", detailLabel);
+            SetField(notebook, "detailTitle", detailTitle);
+            SetField(notebook, "detailBody", body);
+            SetField(notebook, "compareBlock", compare.gameObject);
+            SetField(notebook, "compareTemplate", compareTemplate.GetComponent<Button>());
+            SetField(notebook, "compareContainer", compareContent);
+            SetField(notebook, "compareResult", compareResult);
+            SetField(notebook, "observationRow", obsRow.gameObject);
+            SetField(notebook, "observationInput", obsInput);
+            SetField(notebook, "addObservationButton", add);
+            SetField(notebook, "backButton", back);
+            SetField(notebook, "firstSelected", back.gameObject);
+        }
+
+        // ------------------------------------------------------------------ CONTRADICTION FEEDBACK
+
+        private static void BuildContradictionFeedback(Transform parent)
+        {
+            RectTransform banner = Place(Rect("ContradictionFeedback", parent), new Vector2(0.31f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -36), new Vector2(1000, 150));
+            banner.gameObject.AddComponent<CanvasGroup>();
+            var view = banner.gameObject.AddComponent<ContradictionFeedbackView>();
+            Image(banner, new Color(Theme.panel.r, Theme.panel.g, Theme.panel.b, 0.97f));
+            VLayout(banner, 6, new RectOffset(36, 28, 20, 20));
+
+            RectTransform bar = Rect("AccentBar", banner);
+            bar.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            bar.anchorMin = new Vector2(0, 0); bar.anchorMax = new Vector2(0, 1); bar.pivot = new Vector2(0, 0.5f); bar.sizeDelta = new Vector2(5, 0);
+            Image accent = Image(bar, Theme.accent);
+
+            TextMeshProUGUI title = Text(banner, "Title", "CONTRADICTION", 22, Theme.accent, TextAlignmentOptions.TopLeft, FontStyles.Bold, 6, false);
+            TextMeshProUGUI statement = Text(banner, "Statement", "", 17, Theme.textPrimary, TextAlignmentOptions.TopLeft, FontStyles.Italic);
+            TextMeshProUGUI explanation = Text(banner, "Explanation", "", 16, Theme.textSecondary);
+
+            SetField(view, "accentBar", accent);
+            SetField(view, "title", title);
+            SetField(view, "statement", statement);
+            SetField(view, "explanation", explanation);
+        }
+
+        // ------------------------------------------------------------------ CLOSE THE CASE
+
+        private static void BuildConclusionScreen(Transform parent)
+        {
+            RectTransform screen = Stretch(Rect("CloseTheCase", parent));
+            screen.gameObject.AddComponent<CanvasGroup>();
+            var conclusion = screen.gameObject.AddComponent<ConclusionScreen>();
+            Scrim(screen, new Color(0, 0, 0, 0.9f));
+
+            RectTransform card = Place(Rect("Card", screen), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1180, 760));
+            Image(card, Theme.panel, true);
+            HorizontalLayoutGroup cols = HLayout(card, 40, new RectOffset(56, 56, 48, 44), TextAnchor.UpperLeft);
+            cols.childForceExpandHeight = true;
+
+            RectTransform left = Rect("Options", card);
+            VLayout(left, 8);
+            Layout(left, 460, -1, 0, 1);
+            TextMeshProUGUI caseLabel = Label(left, "CASE", Theme.accent);
+            Text(left, "Title", "CLOSE THE CASE", 32, Theme.textPrimary, TextAlignmentOptions.TopLeft, FontStyles.Normal, 6, false);
+            Spacer(left, 10);
+            RectTransform list = Rect("List", left);
+            VLayout(list, 6);
+            GameObject template = Spawn(ListButton, list, "OptionTemplate");
+
+            RectTransform right = Rect("Detail", card);
+            VLayout(right, 12);
+            Layout(right, -1, -1, 1, 1);
+            Label(right, "YOUR CONCLUSION", Theme.textMuted);
+            TextMeshProUGUI detailTitle = Text(right, "DetailTitle", "Choose your conclusion", 28, Theme.textPrimary);
+            TextMeshProUGUI detailBody = Text(right, "DetailBody", "", 19, Theme.textSecondary);
+            detailBody.lineSpacing = 6f;
+            RectTransform filler = Rect("Filler", right);
+            Layout(filler, -1, -1, 1, 1);
+            Text(right, "Warning", "This decision is final. The ending depends on what you can prove.", 15, Theme.textMuted, TextAlignmentOptions.TopLeft, FontStyles.Italic);
+            RectTransform buttons = Rect("Buttons", right);
+            HLayout(buttons, 12);
+            Button confirm = SpawnButton(ActionButton, buttons, "CLOSE THE CASE");
+            Layout(confirm, 340, 54);
+            RectTransform gap = Rect("Gap", buttons);
+            Layout(gap, -1, 10, 1);
+            Button back = SpawnButton(ActionButton, buttons, "BACK");
+            Layout(back, 150, 54);
+
+            SetField(conclusion, "caseLabel", caseLabel);
+            SetField(conclusion, "optionTemplate", template.GetComponent<Button>());
+            SetField(conclusion, "optionContainer", list);
+            SetField(conclusion, "detailTitle", detailTitle);
+            SetField(conclusion, "detailBody", detailBody);
+            SetField(conclusion, "confirmButton", confirm);
+            SetField(conclusion, "confirmLabel", confirm.GetComponentInChildren<TMP_Text>());
+            SetField(conclusion, "backButton", back);
+            SetField(conclusion, "firstSelected", back.gameObject);
+        }
+
+        // ------------------------------------------------------------------ ENDING
+
+        private static void BuildEndingScreen(Transform parent)
+        {
+            RectTransform screen = Stretch(Rect("Ending", parent));
+            screen.gameObject.AddComponent<CanvasGroup>();
+            var ending = screen.gameObject.AddComponent<EndingScreen>();
+            Scrim(screen, Theme.background);
+
+            RectTransform column = Place(Rect("Column", screen), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1100, 900));
+            VLayout(column, 14, null, TextAnchor.MiddleLeft);
+            TextMeshProUGUI outcome = Text(column, "Outcome", "CASE SOLVED", 18, Theme.accent, TextAlignmentOptions.TopLeft, FontStyles.Bold, 10, false);
+            TextMeshProUGUI title = Text(column, "EndingTitle", "Ending", 52, Theme.textPrimary, TextAlignmentOptions.TopLeft, FontStyles.Normal, 1);
+            RectTransform ruleRow = Rect("RuleRow", column);
+            HLayout(ruleRow, 0);            // a row, so the rule keeps its 120px width
+            RectTransform rule = Rect("Rule", ruleRow);
+            Layout(rule, 120, 3);
+            Image(rule, Theme.accent);
+            TextMeshProUGUI conclusionLine = Text(column, "Conclusion", "", 18, Theme.textMuted, TextAlignmentOptions.TopLeft, FontStyles.Italic);
+            TextMeshProUGUI epilogue = Text(column, "Epilogue", "", 22, Theme.textSecondary);
+            epilogue.lineSpacing = 10f;
+            Spacer(column, 10);
+            Label(column, "INVESTIGATION");
+            TextMeshProUGUI stats = Text(column, "Stats", "", 17, Theme.textSecondary);
+            stats.lineSpacing = 6f;
+            Spacer(column, 16);
+            RectTransform menuRow = Rect("MenuRow", column);
+            HLayout(menuRow, 0);
+            Button menu = SpawnButton(ActionButton, menuRow, "RETURN TO MAIN MENU");
+            Layout(menu, 340, 54);
+
+            SetField(ending, "outcomeLabel", outcome);
+            SetField(ending, "title", title);
+            SetField(ending, "conclusionLine", conclusionLine);
+            SetField(ending, "epilogue", epilogue);
+            SetField(ending, "stats", stats);
+            SetField(ending, "mainMenuButton", menu);
+            SetField(ending, "firstSelected", menu.gameObject);
+            var endingSo = new SerializedObject(ending);
+            endingSo.FindProperty("fadeDuration").floatValue = 1.4f; // the ending arrives slowly
+            endingSo.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // ------------------------------------------------------------------ EVIDENCE PRESENTATION CARD
+
+        private static void BuildEvidencePresentationCard(Transform parent)
+        {
+            // Centred over the interview scene (the left 62% of the screen), clear of the dialogue column.
+            RectTransform card = Place(Rect("EvidencePresentation", parent), new Vector2(0.31f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -40), new Vector2(720, 120));
+            card.gameObject.AddComponent<CanvasGroup>();
+            var view = card.gameObject.AddComponent<TLA.UI.Dialogue.EvidencePresentationCard>();
+            Image(card, new Color(Theme.panel.r, Theme.panel.g, Theme.panel.b, 0.92f));
+            VLayout(card, 6, new RectOffset(32, 32, 22, 22), TextAnchor.MiddleCenter);
+            TextMeshProUGUI label = Text(card, "Label", "EVIDENCE PRESENTED", Theme.labelSize, Theme.accent, TextAlignmentOptions.Center, FontStyles.Normal, Theme.labelSpacing, false);
+            TextMeshProUGUI name = Text(card, "Name", "Evidence", 26, Theme.textPrimary, TextAlignmentOptions.Center, FontStyles.Normal, 1, false);
+            SetField(view, "label", label);
+            SetField(view, "evidenceName", name);
+        }
+
+        // ------------------------------------------------------------------ SAVE / LOAD
+
+        private static void BuildSaveSlotScreen(Transform parent)
+        {
+            RectTransform screen = Stretch(Rect("SaveSlots", parent));
+            screen.gameObject.AddComponent<CanvasGroup>();
+            var slots = screen.gameObject.AddComponent<SaveSlotScreen>();
+            Scrim(screen, new Color(0, 0, 0, 0.88f));
+
+            RectTransform card = Place(Rect("Card", screen), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1100, 820));
+            Image(card, Theme.panel, true);
+            VLayout(card, 10, new RectOffset(56, 56, 48, 44));
+            TextMeshProUGUI label = Label(card, "SAVE", Theme.accent);
+            TextMeshProUGUI title = Text(card, "Title", "SAVE INVESTIGATION", 32, Theme.textPrimary, TextAlignmentOptions.TopLeft, FontStyles.Normal, 6, false);
+            Spacer(card, 8);
+            ScrollRect list = ScrollList(card, "Slots", 8, out RectTransform content);
+            Layout(list, -1, -1, 1, 1);
+            GameObject template = Spawn(ListButton, content, "SlotTemplate");
+            TextMeshProUGUI status = Text(card, "Status", "", 17, Theme.textSecondary);
+            Layout(status, -1, 24);
+            RectTransform buttons = Rect("Buttons", card);
+            HLayout(buttons, 12);
+            Button action = SpawnButton(ActionButton, buttons, "SAVE HERE");
+            Layout(action, 380, 54);
+            Button delete = SpawnButton(ActionButton, buttons, "DELETE");
+            Layout(delete, 300, 54);
+            RectTransform gap = Rect("Gap", buttons);
+            Layout(gap, -1, 10, 1);
+            Button back = SpawnButton(ActionButton, buttons, "BACK");
+            Layout(back, 150, 54);
+
+            SetField(slots, "titleLabel", label);
+            SetField(slots, "title", title);
+            SetField(slots, "slotTemplate", template.GetComponent<Button>());
+            SetField(slots, "slotContainer", content);
+            SetField(slots, "statusLabel", status);
+            SetField(slots, "actionButton", action);
+            SetField(slots, "actionLabel", action.GetComponentInChildren<TMP_Text>());
+            SetField(slots, "deleteButton", delete);
+            SetField(slots, "deleteLabel", delete.GetComponentInChildren<TMP_Text>());
+            SetField(slots, "backButton", back);
+            SetField(slots, "firstSelected", back.gameObject);
         }
 
         // ------------------------------------------------------------------ SETTINGS
@@ -364,26 +840,44 @@ namespace TLA.EditorTools.UI
             var settings = screen.gameObject.AddComponent<SettingsScreen>();
             Scrim(screen, new Color(0, 0, 0, 0.8f));
 
-            RectTransform card = Place(Rect("Card", screen), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(980, 880));
+            RectTransform card = Place(Rect("Card", screen), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1640, 860));
             Image(card, Theme.panel, true);
             VLayout(card, 2, new RectOffset(64, 64, 52, 44));
 
             Label(card, "OPTIONS", Theme.accent);
             Text(card, "Title", "SETTINGS", 34, Theme.textPrimary, TextAlignmentOptions.TopLeft, FontStyles.Normal, 6, false);
-            Spacer(card, 14);
+            Spacer(card, 6);
 
-            Section(card, "CONTROLS");
-            UISliderRow sensitivity = Row<UISliderRow>(SliderRow, card, "MouseSensitivity");
-            UIOptionStepper invert = Row<UIOptionStepper>(OptionStepper, card, "InvertLook");
-            Section(card, "AUDIO");
-            UISliderRow volume = Row<UISliderRow>(SliderRow, card, "MasterVolume");
-            Section(card, "DISPLAY");
-            UIOptionStepper mode = Row<UIOptionStepper>(OptionStepper, card, "DisplayMode");
-            UIOptionStepper resolution = Row<UIOptionStepper>(OptionStepper, card, "Resolution");
-            UIOptionStepper quality = Row<UIOptionStepper>(OptionStepper, card, "Quality");
-            UIOptionStepper vsync = Row<UIOptionStepper>(OptionStepper, card, "VSync");
-            UISliderRow fov = Row<UISliderRow>(SliderRow, card, "FieldOfView");
-            UISliderRow brightness = Row<UISliderRow>(SliderRow, card, "Brightness");
+            // Two columns so every option fits on one screen.
+            RectTransform columns = Rect("Columns", card);
+            HorizontalLayoutGroup cols = HLayout(columns, 72, null, TextAnchor.UpperLeft);
+            cols.childForceExpandWidth = true;
+            Layout(columns, -1, -1, 1, 1);
+            RectTransform leftCol = Rect("Left", columns);
+            VLayout(leftCol, 2);
+            Layout(leftCol, -1, -1, 1);
+            RectTransform rightCol = Rect("Right", columns);
+            VLayout(rightCol, 2);
+            Layout(rightCol, -1, -1, 1);
+
+            Section(leftCol, "CONTROLS");
+            UISliderRow sensitivity = Row<UISliderRow>(SliderRow, leftCol, "MouseSensitivity");
+            UIOptionStepper invert = Row<UIOptionStepper>(OptionStepper, leftCol, "InvertLook");
+            Section(leftCol, "AUDIO");
+            UISliderRow volume = Row<UISliderRow>(SliderRow, leftCol, "MasterVolume");
+            UISliderRow music = Row<UISliderRow>(SliderRow, leftCol, "MusicVolume");
+            UISliderRow effects = Row<UISliderRow>(SliderRow, leftCol, "EffectsVolume");
+            UISliderRow ambience = Row<UISliderRow>(SliderRow, leftCol, "AmbienceVolume");
+            Section(leftCol, "DIALOGUE");
+            UIOptionStepper aiMode = Row<UIOptionStepper>(OptionStepper, leftCol, "AIMode");
+
+            Section(rightCol, "DISPLAY");
+            UIOptionStepper mode = Row<UIOptionStepper>(OptionStepper, rightCol, "DisplayMode");
+            UIOptionStepper resolution = Row<UIOptionStepper>(OptionStepper, rightCol, "Resolution");
+            UIOptionStepper quality = Row<UIOptionStepper>(OptionStepper, rightCol, "Quality");
+            UIOptionStepper vsync = Row<UIOptionStepper>(OptionStepper, rightCol, "VSync");
+            UISliderRow fov = Row<UISliderRow>(SliderRow, rightCol, "FieldOfView");
+            UISliderRow brightness = Row<UISliderRow>(SliderRow, rightCol, "Brightness");
 
             Spacer(card, 22);
             RectTransform buttons = Rect("Buttons", card);
@@ -398,12 +892,16 @@ namespace TLA.EditorTools.UI
             SetField(settings, "mouseSensitivity", sensitivity);
             SetField(settings, "invertY", invert);
             SetField(settings, "masterVolume", volume);
+            SetField(settings, "musicVolume", music);
+            SetField(settings, "effectsVolume", effects);
+            SetField(settings, "ambienceVolume", ambience);
             SetField(settings, "displayMode", mode);
             SetField(settings, "resolution", resolution);
             SetField(settings, "quality", quality);
             SetField(settings, "vSync", vsync);
             SetField(settings, "fieldOfView", fov);
             SetField(settings, "brightness", brightness);
+            SetField(settings, "aiMode", aiMode);
             SetField(settings, "resetButton", reset);
             SetField(settings, "backButton", back);
             SetField(settings, "firstSelected", back.gameObject);
@@ -452,12 +950,13 @@ namespace TLA.EditorTools.UI
             Image(rule, Theme.accent);
             Text(titleBlock, "Tagline", "Every case ends with one question.", 22, Theme.textSecondary, TextAlignmentOptions.BottomLeft, FontStyles.Italic, 1, false);
 
-            RectTransform buttons = Place(Rect("Buttons", main), new Vector2(0, 0.5f), new Vector2(0, 1), new Vector2(106, 110), new Vector2(520, 420));
+            RectTransform buttons = Place(Rect("Buttons", main), new Vector2(0, 0.5f), new Vector2(0, 1), new Vector2(106, 110), new Vector2(620, 480));
             VLayout(buttons, 2);
             Button newInv = SpawnButton(MenuButton, buttons, "NEW INVESTIGATION");
             Button cont = SpawnButton(MenuButton, buttons, "CONTINUE INVESTIGATION");
             TextMeshProUGUI contDetail = Text(buttons, "ContinueDetail", "No saved investigation", 14, Theme.textMuted, TextAlignmentOptions.TopLeft, FontStyles.Normal, 2, false);
             contDetail.margin = new Vector4(25, -10, 0, 6);
+            Button loadInv = SpawnButton(MenuButton, buttons, "LOAD INVESTIGATION");
             Button cases = SpawnButton(MenuButton, buttons, "CASE FILES");
             Button settings = SpawnButton(MenuButton, buttons, "SETTINGS");
             Button exit = SpawnButton(MenuButton, buttons, "EXIT GAME");
@@ -476,6 +975,7 @@ namespace TLA.EditorTools.UI
             SetField(controller, "caseFiles", caseFiles);
             SetField(controller, "newInvestigationButton", newInv);
             SetField(controller, "continueButton", cont);
+            SetField(controller, "loadButton", loadInv);
             SetField(controller, "caseFilesButton", cases);
             SetField(controller, "settingsButton", settings);
             SetField(controller, "exitButton", exit);

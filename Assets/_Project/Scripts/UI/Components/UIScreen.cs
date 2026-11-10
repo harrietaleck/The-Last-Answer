@@ -23,6 +23,7 @@ namespace TLA.UI.Components
 
         private CanvasGroup _group;
         private float _targetAlpha;
+        private int _selectAttempts;
 
         public bool IsVisible { get; private set; }
 
@@ -36,9 +37,21 @@ namespace TLA.UI.Components
 
         protected virtual void Update()
         {
-            if (Mathf.Approximately(Group.alpha, _targetAlpha)) return;
-            float step = fadeDuration <= 0f ? 1f : Time.unscaledDeltaTime / fadeDuration;
-            Group.alpha = Mathf.MoveTowards(Group.alpha, _targetAlpha, step);
+            if (!Mathf.Approximately(Group.alpha, _targetAlpha))
+            {
+                float step = fadeDuration <= 0f ? 1f : Time.unscaledDeltaTime / fadeDuration;
+                Group.alpha = Mathf.MoveTowards(Group.alpha, _targetAlpha, step);
+            }
+
+            // The canvas needs a rendered frame before its buttons can hold a selection.
+            // Offer the first control until one sticks, without replacing a choice the player already made.
+            if (_selectAttempts < 45 && IsVisible && firstSelected != null)
+            {
+                _selectAttempts++;
+                EventSystem events = EventSystem.current;
+                if (events != null && events.currentSelectedGameObject == null)
+                    SelectFirst();
+            }
         }
 
         public void Show()
@@ -49,6 +62,7 @@ namespace TLA.UI.Components
             Group.interactable = true;
             Group.blocksRaycasts = true;
             OnShown();
+            _selectAttempts = 0;
             SelectFirst();
         }
 

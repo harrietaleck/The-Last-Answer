@@ -35,8 +35,18 @@ namespace TLA.UI.Components
 
         private void Awake()
         {
+            EnsureStyle(previousButton);
+            EnsureStyle(nextButton);
             if (previousButton != null) previousButton.onClick.AddListener(Previous);
             if (nextButton != null) nextButton.onClick.AddListener(Next);
+        }
+
+        /// <summary>Arrow buttons are small ColorTint controls. Give them the same hover and selection look as the rest of the UI.</summary>
+        private static void EnsureStyle(Button button)
+        {
+            if (button == null || button.TryGetComponent<UIButtonStyle>(out _)) return;
+            button.transition = Selectable.Transition.None;
+            button.gameObject.AddComponent<UIButtonStyle>();
         }
 
         private void OnDestroy()
@@ -51,6 +61,7 @@ namespace TLA.UI.Components
 
         private void Step(int delta)
         {
+            UISound.Play(TLA.Data.Audio.SoundCue.UIClick);
             if (_options.Count == 0) return;
             _index = (_index + delta + _options.Count) % _options.Count; // wraps around
             Refresh();

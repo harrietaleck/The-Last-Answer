@@ -28,7 +28,20 @@ namespace TLA.Systems.Dialogue
         EvidenceContradiction,// shown evidence that exposes a lie → partial admission
         EvidenceReaction,     // shown relevant evidence
         EvidenceIrrelevant,   // shown evidence they have nothing to say about
-        EvidenceRepeated      // shown the same evidence again
+        EvidenceRepeated,     // shown the same evidence again
+        ChallengeRejected,    // challenged a statement with evidence that doesn't contradict it: the suspect brushes it off
+        ChallengeUnproven     // the right evidence, but the contradiction can't be proven yet: the suspect evades
+    }
+
+    /// <summary>
+    /// The investigation system's verdict on a challenge (statement + evidence), decided in C# by the
+    /// ContradictionChecker BEFORE the suspect answers. The dialogue only words the reaction.
+    /// </summary>
+    public enum ChallengeVerdict
+    {
+        Valid,
+        Unproven,
+        Invalid
     }
 
     /// <summary>
@@ -63,6 +76,9 @@ namespace TLA.Systems.Dialogue
     {
         public SuspectProfile Suspect;
         public SuspectKnowledge Knowledge;
+
+        /// <summary>The case being investigated (public details only are ever sent online). May be null in tests.</summary>
+        public CaseDefinition Case;
 
         /// <summary>The player's words (empty for evidence presentation and greetings).</summary>
         public string PlayerInput;

@@ -5,9 +5,9 @@ using UnityEngine;
 namespace TLA.UI.Transitions
 {
     /// <summary>
-    /// Full-screen black overlay in the Bootstrap scene. It cuts to black the moment a scene starts
-    /// loading (hiding the empty frames between scenes) and fades back in once the new scene is
-    /// ready. Reacts only to SceneLoader events, so nothing else needs to know it exists.
+    /// Full-screen black overlay in the Bootstrap scene. It fades to black when a scene starts loading
+    /// (the SceneLoader waits for this; GameConfig → Audio → Scene Fade Out Seconds), stays black while
+    /// the new scene loads, and fades back in once it's ready. Reacts only to SceneLoader events.
     /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
     public sealed class ScreenFader : MonoBehaviour
@@ -21,6 +21,8 @@ namespace TLA.UI.Transitions
         private CanvasGroup _group;
         private float _holdUntil;
         private bool _fadingIn;
+        private bool _fadingOut;
+        private float _fadeOutDuration = 0.4f;
 
         private void Awake()
         {
@@ -50,6 +52,12 @@ namespace TLA.UI.Transitions
 
         private void Update()
         {
+            if (_fadingOut)
+            {
+                _group.alpha = Mathf.MoveTowards(_group.alpha, 1f, Time.unscaledDeltaTime / Mathf.Max(0.05f, _fadeOutDuration));
+                if (_group.alpha >= 1f) _fadingOut = false;
+                return;
+            }
             if (!_fadingIn || Time.unscaledTime < _holdUntil) return;
 
             _group.alpha = Mathf.MoveTowards(_group.alpha, 0f, Time.unscaledDeltaTime / fadeInDuration);
@@ -59,7 +67,9 @@ namespace TLA.UI.Transitions
         private void OnLoadStarted(SceneLoadStartedEvent evt)
         {
             _fadingIn = false;
-            _group.alpha = 1f;
+            _fadeOutDuration = TLA.Core.Services.Services.TryGet(out TLA.Systems.Flow.SceneLoader loader) && loader.FadeOutSeconds > 0f ? loader.FadeOutSeconds : 0f;
+            if (_fadeOutDuration > 0f) _fadingOut = true;
+            else _group.alpha = 1f;
         }
 
         private void OnLoaded(SceneLoadedEvent evt)
@@ -69,6 +79,7 @@ namespace TLA.UI.Transitions
 
         private void BeginFadeIn()
         {
+            _fadingOut = false;
             _holdUntil = Time.unscaledTime + holdDuration;
             _fadingIn = true;
         }

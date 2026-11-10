@@ -27,6 +27,9 @@ namespace TLA.Gameplay.Interaction
 
         public virtual string Prompt => prompt;
 
+        /// <summary>Sound played after a successful interaction. Override (e.g. doors play their own; None = silent).</summary>
+        protected virtual TLA.Data.Audio.SoundCue InteractionSound => TLA.Data.Audio.SoundCue.Interact;
+
         public virtual bool CanInteract => interactionEnabled && isActiveAndEnabled;
 
         public UnityEvent OnInteracted => onInteracted;
@@ -36,12 +39,20 @@ namespace TLA.Gameplay.Interaction
             if (!CanInteract) return;
 
             OnInteract(interactor);
+            PlaySound(InteractionSound, transform.position);
             onInteracted.Invoke();
         }
 
         public void SetInteractionEnabled(bool value)
         {
             interactionEnabled = value;
+        }
+
+        /// <summary>Plays a sound effect through the AudioManager (does nothing if the game systems aren't running).</summary>
+        protected static void PlaySound(TLA.Data.Audio.SoundCue cue, Vector3? position = null)
+        {
+            if (cue != TLA.Data.Audio.SoundCue.None && TLA.Core.Services.Services.TryGet(out TLA.Systems.Audio.AudioManager audio))
+                audio.Play(cue, position);
         }
 
         /// <summary>Change the prompt at runtime, e.g. "Open" -> "Close".</summary>

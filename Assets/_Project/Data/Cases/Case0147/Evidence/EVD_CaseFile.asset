@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df52e01750a2d85499dcca6bb2284122, type: 3}
+  m_Name: EVD_CaseFile
+  m_EditorClassIdentifier: TLA.Data::TLA.Data.Evidence.EvidenceDefinition
+  evidenceId: EVD_CaseFile
+  displayName: Case file 0147
+  category: 0
+  description: 'The initial incident report: the victim, the time he was found, who
+    could get into the building and the persons of interest.'
+  locationFound: "Evidence Room \xB7 investigation desk"
+  interactionPrompt: Read case file
+  pages:
+  - "METROPOLITAN POLICE  \xB7  CASE 0147\nINCIDENT REPORT\n\nVictim: Daniel REYES,
+    46. Co-owner of Reyes & Marlowe Architects, 3rd floor, 18 Harlow Street.\n\nReported
+    23:52 on the 14th by Nora HAYES (office manager), who returned for her laptop
+    and found the victim at his desk.\n\nFirst officer on scene 00:06. Victim pronounced
+    dead at the scene."
+  - 'SCENE
+
+
+    Office door closed but not locked. No damage to door, frame or lock.
+
+    Building
+    alarm armed at 19:10. It never triggered.
+
+    No sign of a struggle in the outer
+    office.
+
+
+    ACCESS
+
+
+    Key holders: D. Reyes, E. Marlowe, N. Hayes.
+
+    Card
+    issued to V. Kim (dismissed two weeks ago) not yet deactivated.
+
+    Building
+    access log requested.'
+  - "PERSONS OF INTEREST\n\nElliot MARLOWE, 51  \xB7  business partner. States he
+    was at home all evening.\nNora HAYES, 34  \xB7  office manager. Found the body.\nVictor
+    KIM, 29  \xB7  former junior architect. Dismissed after a dispute with the victim.\n\nNEXT
+    STEPS\nInterview Marlowe. Obtain the building access log. Review lobby CCTV."
+  image: {fileID: 0}
+  caption: 
+  examinationNotes: 'The access section is underlined twice in pencil: "Building
+    access log requested." A copy should be in the filing cabinet by the shelves.'
+  relatedFacts:
+  - {fileID: 11400000, guid: 4b4bb222a9923df4f98ea8f17742221c, type: 2}
+  - {fileID: 11400000, guid: 5e013e8a921fc334db6b5c4d5e8ebe4d, type: 2}
+  collectable: 1
+  noteOnCollect: 'Reyes was found at 23:50 and the alarm never went off. Whoever
+    was there had a key: Marlowe, Hayes or Kim.'
+  objectiveOnCollect: 
+  discovery:
+    requiresCollected: []
+    requiresExamined: []
+    requiresFacts: []
+    hiddenUntilAvailable: 0
+    lockedPrompt: Search
+    lockedHint: Nothing stands out yet.
+  connections: []

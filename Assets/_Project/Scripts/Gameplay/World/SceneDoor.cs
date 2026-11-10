@@ -27,6 +27,8 @@ namespace TLA.Gameplay.World
 
         public override bool CanInteract => base.CanInteract && !IsLoading();
 
+        protected override TLA.Data.Audio.SoundCue InteractionSound => TLA.Data.Audio.SoundCue.DoorOpen;
+
         protected override void OnInteract(PlayerInteractor interactor)
         {
             if (!Services.TryGet(out GameManager game))

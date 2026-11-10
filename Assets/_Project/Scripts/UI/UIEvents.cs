@@ -15,3 +15,28 @@ namespace TLA.UI
     {
     }
 }
+
+namespace TLA.UI
+{
+    /// <summary>A modal UI overlay (evidence screens) opened or closed. See <see cref="Components.UIOverlay"/>.</summary>
+    public readonly struct UIOverlayChangedEvent : IGameEvent
+    {
+        public readonly int OpenCount;
+        public UIOverlayChangedEvent(int openCount) { OpenCount = openCount; }
+    }
+}
+
+namespace TLA.UI
+{
+    /// <summary>Open the save/load slot screen. <see cref="Save"/> = save mode, otherwise load mode.</summary>
+    public readonly struct SaveSlotsRequestedEvent : IGameEvent
+    {
+        public readonly bool Save;
+        public SaveSlotsRequestedEvent(bool save) { Save = save; }
+    }
+
+    /// <summary>The save/load slot screen closed (menus refresh their "Continue" info).</summary>
+    public readonly struct SaveSlotsClosedEvent : IGameEvent
+    {
+    }
+}

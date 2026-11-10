@@ -97,7 +97,7 @@ namespace TLA.UI.HUD
         {
             CaseSessionService session = Services.TryGet(out GameManager game) ? game.Case : null;
             if (session == null || !session.HasActiveCase) return;
-            int total = session.CurrentCase.evidenceTotal;
+            int total = session.CurrentCase.EvidenceTotal;
             evidenceCount.text = total > 0 ? $"{session.Evidence.Count} / {total}" : session.Evidence.Count.ToString();
         }
     }

@@ -105,6 +105,7 @@ MonoBehaviour:
   primaryText: {r: 0.93333334, g: 0.93333334, b: 0.9372549, a: 1}
   secondaryText: {r: 0.7607843, g: 0.77254903, b: 0.7921569, a: 1}
   mutedText: {r: 0.36078432, g: 0.38039216, b: 0.40784314, a: 1}
+  fadeInSeconds: 0.35
 --- !u!1 &4121353268822580731
 GameObject:
   m_ObjectHideFlags: 0

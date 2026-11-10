@@ -97,4 +97,19 @@ namespace TLA.Systems.Dialogue
         public readonly string Message;
         public DialogueErrorEvent(string message) { Message = message; }
     }
+
+    /// <summary>FROM THE UI: challenge one of the suspect's recorded statements with a piece of evidence.</summary>
+    public readonly struct PlayerChallengedStatementEvent : IGameEvent
+    {
+        public readonly string StatementId;
+        public readonly string EvidenceId;
+        public PlayerChallengedStatementEvent(string statementId, string evidenceId) { StatementId = statementId; EvidenceId = evidenceId; }
+    }
+
+    /// <summary>The interviewed suspect's composure after a turn (0-100). Drives the subtle tension audio.</summary>
+    public readonly struct SuspectComposureChangedEvent : IGameEvent
+    {
+        public readonly int Composure;
+        public SuspectComposureChangedEvent(int composure) { Composure = composure; }
+    }
 }

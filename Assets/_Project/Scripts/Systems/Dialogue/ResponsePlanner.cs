@@ -24,6 +24,8 @@ namespace TLA.Systems.Dialogue
         public const int AccusationCost = 10;
         public const int ConfessionRequestCost = 5;
         public const int ContradictionCost = 25;
+        public const int UnprovenChallengeCost = 3;
+        public const int RejectedChallengeGain = 5;   // a weak challenge makes the suspect MORE confident
 
         /// <summary>Read-only view of the session state the rules need.</summary>
         public interface IState
@@ -126,7 +128,11 @@ namespace TLA.Systems.Dialogue
             }
         }
 
-        public static ResponsePlan PlanEvidence(string evidenceId, string evidenceName, SuspectKnowledge knowledge, IState state)
+        /// <param name="detectContradictions">
+        /// True: evidence listed in a topic's contradictedByEvidence exposes it (stand-alone dialogue).
+        /// False: the game's investigation system decides contradictions and uses <see cref="PlanChallenge"/> instead.
+        /// </param>
+        public static ResponsePlan PlanEvidence(string evidenceId, string evidenceName, SuspectKnowledge knowledge, IState state, bool detectContradictions = true)
         {
             var plan = new ResponsePlan { EvidenceId = evidenceId, EvidenceName = evidenceName, MarksEvidencePresented = true };
 
@@ -140,6 +146,7 @@ namespace TLA.Systems.Dialogue
             // Does this evidence break one of the suspect's lies or omissions?
             if (knowledge != null)
             {
+                if (detectContradictions)
                 foreach (KnowledgeTopic topic in knowledge.topics)
                 {
                     if (topic == null || state.IsContradicted(topic.topicId) || !Contains(topic.contradictedByEvidence, evidenceId)) continue;
@@ -161,6 +168,37 @@ namespace TLA.Systems.Dialogue
 
             plan.Kind = ResponseKind.EvidenceIrrelevant;
             plan.VariantIndex = state.NextVariant("irrelevant");
+            return plan;
+        }
+
+        /// <summary>
+        /// The player challenges a statement (on <paramref name="topic"/>) with evidence. The verdict was
+        /// decided by the investigation system; this only turns it into a reply plan:
+        ///   Valid    → partial admission (the topic's admissionAnswer), big composure loss
+        ///   Unproven → the suspect evades, small composure loss
+        ///   Invalid  → the suspect brushes it off and regains some composure
+        /// </summary>
+        public static ResponsePlan PlanChallenge(KnowledgeTopic topic, string evidenceId, string evidenceName, ChallengeVerdict verdict, IState state)
+        {
+            var plan = new ResponsePlan { Topic = topic, EvidenceId = evidenceId, EvidenceName = evidenceName, MarksEvidencePresented = true };
+            switch (verdict)
+            {
+                case ChallengeVerdict.Valid:
+                    plan.Kind = topic != null && state.IsContradicted(topic.topicId) ? ResponseKind.TopicAdmitted : ResponseKind.EvidenceContradiction;
+                    plan.MarksTopicContradicted = topic != null;
+                    plan.ComposureDelta = plan.Kind == ResponseKind.EvidenceContradiction ? -ContradictionCost : 0;
+                    break;
+                case ChallengeVerdict.Unproven:
+                    plan.Kind = ResponseKind.ChallengeUnproven;
+                    plan.ComposureDelta = -UnprovenChallengeCost;
+                    plan.VariantIndex = state.NextVariant("unproven");
+                    break;
+                default:
+                    plan.Kind = ResponseKind.ChallengeRejected;
+                    plan.ComposureDelta = RejectedChallengeGain;
+                    plan.VariantIndex = state.NextVariant("rejected");
+                    break;
+            }
             return plan;
         }
 

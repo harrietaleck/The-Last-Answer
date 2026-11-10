@@ -22,7 +22,19 @@ MonoBehaviour:
   ai:
     defaultMode: 0
     backendBaseUrl: 
+    developmentBackendUrl: http://localhost:8787
     requestTimeoutSeconds: 10
+    maxReplyCharacters: 320
+    maxNarrationCharacters: 120
+    historyLinesSent: 12
+    failuresBeforePause: 2
+    pauseAfterFailuresSeconds: 60
+  audio:
+    library: {fileID: 11400000, guid: 7686bb45c29bbbe418d36c554f79d4f8, type: 2}
+    sceneFadeOutSeconds: 0.4
+    musicCrossfadeSeconds: 3
+    maxSimultaneousEffects: 12
+    pausedVolume: 0.45
   debug:
     showDebugOverlay: 1
   caseCatalog: {fileID: 11400000, guid: f087f5509680973459153599b1c3615e, type: 2}

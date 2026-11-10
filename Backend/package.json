@@ -1,0 +1,12 @@
+{
+  "name": "the-last-answer-dialogue-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reference backend for The Last Answer's online dialogue. Holds AI credentials server-side; the game never sees them.",
+  "main": "server.js",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js"
+  }
+}

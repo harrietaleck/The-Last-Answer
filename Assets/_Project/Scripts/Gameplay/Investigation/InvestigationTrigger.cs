@@ -11,8 +11,9 @@ namespace TLA.Gameplay.Investigation
     /// The HUD counter, evidence notification and notebook update automatically (they listen to
     /// its events).
     ///
-    /// The real evidence system (later stage) will replace this with Evidence definitions, but it
-    /// will talk to the same CaseSessionService, so the UI won't need to change.
+    /// For EVIDENCE use <see cref="EvidencePickup"/> with an EvidenceDefinition asset instead: it adds
+    /// inspecting, examining, discovery conditions and connections. This trigger stays useful for
+    /// simple notes and objective changes.
     /// </summary>
     public sealed class InvestigationTrigger : Interactable
     {

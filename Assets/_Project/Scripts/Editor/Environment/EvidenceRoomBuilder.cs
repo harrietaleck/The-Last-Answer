@@ -1,6 +1,9 @@
+using TLA.Data.Evidence;
+using TLA.EditorTools.UI;
 using TLA.Gameplay.Investigation;
 using TLA.Systems.Flow;
 using TMPro;
+using UnityEditor;
 using UnityEngine;
 
 namespace TLA.EditorTools.Environment
@@ -11,7 +14,8 @@ namespace TLA.EditorTools.Environment
     ///   West wall   timeline whiteboard
     ///   Centre      investigation desk: case files, open folder, scattered photos, laptop, desk lamp
     ///   East wall   evidence shelving with labelled boxes, filing cabinets
-    /// The board, case files and laptop are InvestigationTriggers (placeholder evidence) until the evidence system exists.
+    /// Evidence (EvidencePickup, data in Data/Cases/Case0147/Evidence): photos on the board, case file, laptop CCTV,
+    /// sale agreement in the open folder, access log in the filing cabinet, coffee cups in an evidence tray.
     /// </summary>
     internal static class EvidenceRoomBuilder
     {
@@ -95,8 +99,7 @@ namespace TLA.EditorTools.Environment
             Thread(b, board, faceZ, s3, card);
             Thread(b, board, faceZ, s2, doc2);
 
-            AddTrigger(cork, "Study evidence board", "EVD_ScenePhotos", "Crime scene photographs",
-                "The office door shows no sign of forced entry. Whoever came in had a key.", "", "", "");
+            AddPickup(cork, "EVD_ScenePhotos");
         }
 
         private static void BuildTimeline(Blockout b)
@@ -139,18 +142,17 @@ namespace TLA.EditorTools.Environment
             }
             var label = b.Label("CaseFiles_Label", new Vector3(-0.6f, top + 0.13f, -0.12f), Quaternion.Euler(90f, 0f, 0f), "CASE 0147", 0.25f, Ink, stack, 0.22f, 0.05f);
             label.fontStyle = FontStyles.Bold;
-            AddTrigger(stack.gameObject, "Read case files", "EVD_CaseFile", "Case file 0147",
-                "Initial report: victim found 23:50. Alarm never triggered. Three keyholders.",
-                "Reyes was found at 23:50 and the alarm never went off. Whoever was there had a key: Marlowe, Hayes or Kim.", "Case file 0147",
-                "Interview Elliot Marlowe in Interview Room 1.");
+            AddPickup(stack.gameObject, "EVD_CaseFile");
 
             // Open folder with documents.
             b.RotatedBox("OpenFolder_L", new Vector3(-0.13f, top + 0.004f, -0.3f), new Vector3(0.24f, 0.006f, 0.32f), new Vector3(0f, -4f, 0f), EnvMaterials.Manila, desk, false);
             b.RotatedBox("OpenFolder_R", new Vector3(0.12f, top + 0.004f, -0.32f), new Vector3(0.24f, 0.006f, 0.32f), new Vector3(0f, 2f, 0f), EnvMaterials.Manila, desk, false);
             b.RotatedBox("Document_A", new Vector3(-0.13f, top + 0.009f, -0.3f), new Vector3(0.21f, 0.002f, 0.297f), new Vector3(0f, -4f, 0f), EnvMaterials.Paper, desk, false);
-            b.RotatedBox("Document_B", new Vector3(0.12f, top + 0.009f, -0.32f), new Vector3(0.21f, 0.002f, 0.297f), new Vector3(0f, 2f, 0f), EnvMaterials.Paper, desk, false);
+            Transform contract = b.Group("SaleAgreement", desk);
+            b.RotatedBox("Document_B", new Vector3(0.12f, top + 0.009f, -0.32f), new Vector3(0.21f, 0.002f, 0.297f), new Vector3(0f, 2f, 0f), EnvMaterials.Paper, contract, true);
             for (int line = 0; line < 8; line++)
-                b.RotatedBox($"Document_B_Line_{line}", new Vector3(0.12f, top + 0.0105f, -0.2f - line * 0.03f), new Vector3(0.16f, 0.0005f, 0.006f), new Vector3(0f, 2f, 0f), EnvMaterials.Trim, desk, false);
+                b.RotatedBox($"Document_B_Line_{line}", new Vector3(0.12f, top + 0.0105f, -0.2f - line * 0.03f), new Vector3(0.16f, 0.0005f, 0.006f), new Vector3(0f, 2f, 0f), EnvMaterials.Trim, contract, false);
+            AddPickup(contract.gameObject, "EVD_SaleContract");
 
             // Scattered photographs.
             DeskPhoto(b, desk, new Vector3(0.38f, top + 0.005f, -0.05f), 14f, EnvMaterials.PhotoCool);
@@ -167,9 +169,7 @@ namespace TLA.EditorTools.Environment
             lid.localRotation = Quaternion.Euler(-15f, 0f, 0f);
             b.Box("Shell", new Vector3(0f, 0.11f, 0f), new Vector3(0.34f, 0.22f, 0.01f), EnvMaterials.Trim, lid, false);
             b.Box("Screen", new Vector3(0f, 0.11f, -0.006f), new Vector3(0.31f, 0.19f, 0.002f), EnvMaterials.Screen, lid, false);
-            AddTrigger(laptop.gameObject, "Review CCTV footage", "EVD_CCTV", "CCTV still, 21:40",
-                "A figure enters the Harlow Street lobby at 21:40. Face hidden. Height around 1.8 m.",
-                "CCTV shows someone entering at 21:40, two hours before the body was found.", "Laptop: CCTV archive", "");
+            AddPickup(laptop.gameObject, "EVD_CCTV");
 
             b.Cylinder("Mug", new Vector3(-0.25f, top + 0.05f, 0.22f), 0.04f, 0.1f, EnvMaterials.Paper, desk);
             b.Box("Pen", new Vector3(-0.02f, top + 0.006f, -0.1f), new Vector3(0.14f, 0.01f, 0.01f), EnvMaterials.Trim, desk, false).transform.localRotation = Quaternion.Euler(0f, 30f, 0f);
@@ -200,8 +200,18 @@ namespace TLA.EditorTools.Environment
                 }
             }
 
-            b.FilingCabinet("Cabinet_0", new Vector3(3.15f, 0f, 1.5f), -90f, 4, shelf);
+            Transform cabinet = b.FilingCabinet("Cabinet_0", new Vector3(3.15f, 0f, 1.5f), -90f, 4, shelf);
             b.FilingCabinet("Cabinet_1", new Vector3(3.15f, 0f, 2.05f), -90f, 4, shelf);
+            AddPickup(cabinet.gameObject, "EVD_KeycardLog", hideOnCollect: false); // the log comes out of the cabinet; the cabinet stays
+
+            // Evidence tray 0147-C with the two coffee cups (in the gap on the top shelf, at eye level).
+            Transform tray = b.Group("EvidenceTray_0147C", shelf);
+            const float trayY = 0.15f + 2 * 0.55f + 0.015f;
+            b.Box("Tray", new Vector3(x - 0.02f, trayY + 0.02f, -1.54f), new Vector3(0.34f, 0.04f, 0.4f), EnvMaterials.Cardboard, tray, true, false);
+            b.Cylinder("Cup_C1", new Vector3(x - 0.04f, trayY + 0.085f, -1.62f), 0.04f, 0.09f, EnvMaterials.Paper, tray);
+            b.Cylinder("Cup_C2", new Vector3(x + 0.02f, trayY + 0.085f, -1.45f), 0.04f, 0.09f, EnvMaterials.Paper, tray);
+            b.Label("Tray_Label", new Vector3(x - 0.195f, trayY + 0.03f, -1.54f), Quaternion.Euler(0f, 90f, 0f), "0147-C", 0.55f, Ink, tray, 0.3f, 0.06f);
+            AddPickup(tray.gameObject, "EVD_CoffeeCups");
         }
 
         private static void BuildLighting(Blockout b)
@@ -271,21 +281,19 @@ namespace TLA.EditorTools.Environment
             b.RotatedBox("DeskPhoto_Image", pos + Vector3.up * 0.002f, new Vector3(0.095f, 0.002f, 0.12f), new Vector3(0f, yaw, 0f), image, parent, false);
         }
 
-        /// <summary>
-        /// Placeholder investigation content (InvestigationTrigger): records evidence, a note and/or a new
-        /// objective through CaseSessionService, so the HUD, notifications and notebook react.
-        /// </summary>
-        private static void AddTrigger(GameObject target, string prompt, string evidenceId, string evidenceName, string evidenceDescription,
-            string note, string noteSource, string newObjective)
+        /// <summary>Makes <paramref name="target"/> an EvidencePickup for the authored evidence asset (Data/Cases/Case0147/Evidence).</summary>
+        private static void AddPickup(GameObject target, string evidenceId, bool hideOnCollect = true)
         {
-            var trigger = target.AddComponent<InvestigationTrigger>();
-            SceneKit.Set(trigger, "prompt", prompt);
-            SceneKit.Set(trigger, "evidenceId", evidenceId);
-            SceneKit.Set(trigger, "evidenceName", evidenceName);
-            SceneKit.Set(trigger, "evidenceDescription", evidenceDescription);
-            SceneKit.Set(trigger, "note", note);
-            SceneKit.Set(trigger, "noteSource", noteSource);
-            SceneKit.Set(trigger, "newObjective", newObjective);
+            var evidence = AssetDatabase.LoadAssetAtPath<EvidenceDefinition>(EvidenceDataBuilder.EvidencePath(evidenceId));
+            if (evidence == null)
+            {
+                Debug.LogError($"[Environment] Evidence asset '{evidenceId}' is missing. Run The Last Answer → Environment → Rebuild All Locations.");
+                return;
+            }
+            var pickup = target.AddComponent<EvidencePickup>();
+            SceneKit.Set(pickup, "evidence", evidence);
+            SceneKit.Set(pickup, "prompt", evidence.interactionPrompt);
+            SceneKit.Set(pickup, "hideOnCollect", hideOnCollect);
         }
     }
 }

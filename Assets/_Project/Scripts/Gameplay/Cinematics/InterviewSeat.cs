@@ -17,6 +17,8 @@ namespace TLA.Gameplay.Cinematics
     /// </summary>
     public sealed class InterviewSeat : Interactable
     {
+        protected override TLA.Data.Audio.SoundCue InteractionSound => TLA.Data.Audio.SoundCue.ChairScrape;
+
         [SerializeField] private CinematicShotDirector director;
 
         [Tooltip("Where the player stands after getting up (position + facing).")]
@@ -65,7 +67,8 @@ namespace TLA.Gameplay.Cinematics
 
             EventBus.Publish(new InterviewEndedEvent());
 
-            if (Services.TryGet(out GameStateManager state))
+            // Only while the interview is the current state (not e.g. after the case ended, or while leaving the scene).
+            if (Services.TryGet(out GameStateManager state) && state.Current == GameState.Interrogating)
                 state.TryChangeState(GameState.Investigating);
         }
 

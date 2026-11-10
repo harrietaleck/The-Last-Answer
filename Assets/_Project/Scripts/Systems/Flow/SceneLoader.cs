@@ -23,6 +23,12 @@ namespace TLA.Systems.Flow
         /// <summary>The scene that holds the GameManager. It is never unloaded.</summary>
         public const string BootstrapSceneName = "Bootstrap";
 
+        /// <summary>
+        /// Seconds to wait after announcing a scene change before unloading the old scene, so the screen
+        /// fader and audio can fade out smoothly. 0 = immediate (tests).
+        /// </summary>
+        public float FadeOutSeconds { get; set; }
+
         /// <summary>True while a scene change is in progress.</summary>
         public bool IsLoading { get; private set; }
 
@@ -103,6 +109,10 @@ namespace TLA.Systems.Flow
 
             try
             {
+                // Let the fade to black finish first (real time, so it also works while paused).
+                if (FadeOutSeconds > 0f && !string.IsNullOrEmpty(CurrentSceneName))
+                    await System.Threading.Tasks.Task.Delay((int)(FadeOutSeconds * 1000f));
+
                 if (!string.IsNullOrEmpty(CurrentSceneName))
                 {
                     AsyncOperation unload = SceneManager.UnloadSceneAsync(CurrentSceneName);

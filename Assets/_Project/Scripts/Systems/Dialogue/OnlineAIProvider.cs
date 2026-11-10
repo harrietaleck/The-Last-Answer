@@ -1,147 +1,163 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using TLA.Data.Cases;
-using UnityEngine.Networking;
+using TLA.Systems.Dialogue.Online;
 
 namespace TLA.Systems.Dialogue
 {
+    /// <summary>Settings for <see cref="OnlineAIProvider"/> (filled from GameConfig → AI).</summary>
+    public sealed class OnlineProviderOptions
+    {
+        public string BackendBaseUrl = "";
+        public float TimeoutSeconds = 10f;
+        public int MaxReplyCharacters = 320;
+        public int MaxNarrationCharacters = 120;
+        public int HistoryLines = 12;
+        public int FailuresBeforePause = 2;
+        public float PauseSeconds = 60f;
+    }
+
     /// <summary>
-    /// LATER-STAGE provider: sends the dialogue context to OUR backend (never directly to an AI
-    /// vendor), which holds the API key, picks the model and returns the suspect's words.
+    /// Sends the dialogue context to OUR backend (never directly to an AI vendor), which holds the
+    /// API key, chooses the AI service and model, and returns the suspect's words.
     ///
-    /// What it sends is deliberately limited to what the rules allow: the decided reply KIND, the
-    /// topic's stance and the authored lines for that topic (the only facts the AI may express),
-    /// the suspect's personality and the recent conversation. The backend must answer with
-    /// {"text": "...", "narration": "..."}. If anything fails, DialogueSession falls back to the mock.
-    ///
-    /// No API key or model name exists in the game. Configure the URL in GameConfig → AI.
+    /// Safety and reliability:
+    ///  - The request carries only what this reply needs (see <see cref="DialogueRequestBuilder"/>):
+    ///    no hidden truths, no unrevealed evidence, no other topics' answers.
+    ///  - The reply is validated (<see cref="ResponseValidator"/>): schema, requestId, length,
+    ///    markup, out-of-character text, invented names and numbers. Failing replies are discarded.
+    ///  - Timeouts, no internet, server errors, rate limits and bad replies all return a failure,
+    ///    and <see cref="DialogueSession"/> lets the offline mock answer instead.
+    ///  - One request at a time: a second call while one is running fails as Busy (no duplicates).
+    ///  - After repeated failures it pauses itself for a while, so the player isn't kept waiting
+    ///    for a timeout on every question while offline.
+    ///  - The reply can only contain words. Evidence, progress, contradictions and endings are
+    ///    decided by the C# rules before the request is even sent.
+    /// No API key, vendor or model name exists anywhere in the game.
     /// </summary>
     public sealed class OnlineAIProvider : IAIProvider
     {
-        private const int MaxHistory = 12;
-        private const int MaxReplyLength = 600;
-
+        private readonly OnlineProviderOptions _options;
+        private readonly IDialogueTransport _transport;
+        private readonly Func<double> _clock;
         private readonly string _endpoint;
+        private readonly string _configProblem;
 
-        public OnlineAIProvider(string backendBaseUrl)
+        private int _inFlight;          // 0 or 1 (Interlocked)
+        private int _consecutiveFailures;
+        private double _pausedUntil;
+
+        public OnlineAIProvider(OnlineProviderOptions options, IDialogueTransport transport = null, Func<double> clock = null)
         {
-            _endpoint = string.IsNullOrWhiteSpace(backendBaseUrl) ? null : backendBaseUrl.TrimEnd('/') + "/v1/dialogue";
+            _options = options ?? new OnlineProviderOptions();
+            _transport = transport ?? new UnityWebRequestTransport();
+            _clock = clock ?? (() => System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency);
+            _endpoint = BackendUrl.ToEndpoint(_options.BackendBaseUrl, out _configProblem);
+        }
+
+        /// <summary>Convenience constructor: default limits, real network.</summary>
+        public OnlineAIProvider(string backendBaseUrl) : this(new OnlineProviderOptions { BackendBaseUrl = backendBaseUrl })
+        {
         }
 
         public string ProviderId => "online";
 
+        /// <summary>True if the backend address is usable (set, valid, https unless localhost).</summary>
+        public bool IsConfigured => _endpoint != null;
+
+        /// <summary>Why the address is unusable (null when configured).</summary>
+        public string ConfigurationProblem => _configProblem;
+
+        /// <summary>True while paused after repeated failures.</summary>
+        public bool IsPaused => _clock() < _pausedUntil;
+
+        /// <summary>The last failure, for logs and the debug overlay.</summary>
+        public AIFailureKind LastFailure { get; private set; }
+
         public async Task<AIResponse> GenerateResponseAsync(DialogueContext context, CancellationToken cancellationToken)
         {
-            if (_endpoint == null) return AIResponse.Fail("No backend URL configured.");
-
-            string body = JsonConvert.SerializeObject(BuildRequest(context));
-            using var request = new UnityWebRequest(_endpoint, UnityWebRequest.kHttpVerbPOST)
-            {
-                uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(body)),
-                downloadHandler = new DownloadHandlerBuffer(),
-                timeout = 15
-            };
-            request.SetRequestHeader("Content-Type", "application/json");
-
-            var done = new TaskCompletionSource<bool>();
-            UnityWebRequestAsyncOperation op = request.SendWebRequest();
-            op.completed += _ => done.TrySetResult(true);
-            using (cancellationToken.Register(() => { request.Abort(); done.TrySetCanceled(); }))
-                await done.Task;
-
-            if (request.result != UnityWebRequest.Result.Success)
-                return AIResponse.Fail($"Backend error: {request.error}");
+            if (_endpoint == null) return AIResponse.Fail(_configProblem, AIFailureKind.NotConfigured);
+            if (context == null) return AIResponse.Fail("No dialogue context.", AIFailureKind.Unknown);
+            if (IsPaused) return AIResponse.Fail("Online dialogue paused after repeated failures.", AIFailureKind.Paused);
+            if (Interlocked.CompareExchange(ref _inFlight, 1, 0) != 0)
+                return AIResponse.Fail("A reply is already being generated.", AIFailureKind.Busy);
 
             try
             {
-                var reply = JsonConvert.DeserializeObject<Reply>(request.downloadHandler.text);
-                string text = Clean(reply?.text);
-                return string.IsNullOrEmpty(text) ? AIResponse.Fail("Empty reply from backend.") : AIResponse.Ok(text, Clean(reply.narration));
+                AIResponse response = await SendAsync(context, cancellationToken);
+                Record(response);
+                return response;
             }
-            catch (JsonException e)
+            finally
             {
-                return AIResponse.Fail("Unreadable reply: " + e.Message);
-            }
-        }
-
-        /// <summary>Basic output safety: trim, cap length, drop AI disclaimers.</summary>
-        private static string Clean(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
-            text = text.Trim();
-            if (text.IndexOf("as an ai", StringComparison.OrdinalIgnoreCase) >= 0) return string.Empty;
-            return text.Length > MaxReplyLength ? text.Substring(0, MaxReplyLength) : text;
-        }
-
-        private static object BuildRequest(DialogueContext c)
-        {
-            KnowledgeTopic topic = c.Plan.Topic;
-            var history = new List<object>();
-            int start = Math.Max(0, (c.History?.Count ?? 0) - MaxHistory);
-            for (int i = start; i < (c.History?.Count ?? 0); i++)
-                history.Add(new { speaker = c.History[i].Speaker.ToString(), text = c.History[i].Text });
-
-            return new
-            {
-                suspect = new
-                {
-                    name = c.SuspectName,
-                    temperament = c.Temperament.ToString(),
-                    speechStyle = c.Suspect != null ? c.Suspect.speechStyle : "",
-                    composure = c.Composure,
-                    level = c.Level.ToString()
-                },
-                playerInput = c.PlayerInput,
-                replyKind = c.Plan.Kind.ToString(),
-                topic = topic == null ? null : new
-                {
-                    id = topic.topicId,
-                    stance = topic.stance.ToString(),
-                    // The ONLY facts the AI may express for this reply:
-                    allowedLines = new[] { PickAllowed(c, topic) }
-                },
-                evidenceShown = c.Plan.EvidenceName,
-                history,
-                rules = new[]
-                {
-                    "Stay in character. Never confess. Never reveal facts not in allowedLines.",
-                    "Never mention evidence that isn't in evidenceShown or history.",
-                    "Express the reply kind and stance; you choose only the wording."
-                }
-            };
-        }
-
-        private static string PickAllowed(DialogueContext c, KnowledgeTopic topic)
-        {
-            switch (c.Plan.Kind)
-            {
-                case ResponseKind.TopicPressured: return topic.pressuredAnswer;
-                case ResponseKind.TopicAdmitted:
-                case ResponseKind.EvidenceContradiction: return topic.admissionAnswer;
-                case ResponseKind.TopicFollowUp: return topic.followUpAnswer;
-                default: return topic.answers != null && topic.answers.Length > 0 ? topic.answers[Math.Min(c.Plan.VariantIndex, topic.answers.Length - 1)] : "";
+                Interlocked.Exchange(ref _inFlight, 0);
             }
         }
 
-        private sealed class Reply
+        private async Task<AIResponse> SendAsync(DialogueContext context, CancellationToken ct)
         {
-            public string text;
-            public string narration;
-        }
-    }
+            DialogueRequestDto request = DialogueRequestBuilder.Build(
+                context, Guid.NewGuid().ToString("N"), _options.MaxReplyCharacters, _options.MaxNarrationCharacters, _options.HistoryLines);
+            string json = JsonConvert.SerializeObject(request, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
-    /// <summary>The single place that chooses a provider. Gameplay and UI never construct providers themselves.</summary>
-    public static class AIProviderFactory
-    {
-        public static IAIProvider Create(TLA.Data.Config.AIProviderMode mode, string backendBaseUrl, int mockMinDelayMs = 600, int mockMaxDelayMs = 1400)
+            TransportResult result;
+            try
+            {
+                result = await _transport.PostJsonAsync(_endpoint, json, _options.TimeoutSeconds, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                return AIResponse.Fail("Cancelled.", AIFailureKind.Cancelled);
+            }
+            catch (Exception e)
+            {
+                return AIResponse.Fail("Network error: " + e.Message, AIFailureKind.Offline);
+            }
+
+            if (ct.IsCancellationRequested && result.Status != TransportStatus.Success)
+                return AIResponse.Fail("Cancelled.", AIFailureKind.Cancelled);
+
+            switch (result.Status)
+            {
+                case TransportStatus.Success:
+                    break;
+                case TransportStatus.Offline:
+                    return AIResponse.Fail("Can't reach the dialogue server: " + result.Error, AIFailureKind.Offline);
+                case TransportStatus.Timeout:
+                    return AIResponse.Fail("The dialogue server took too long to answer.", AIFailureKind.Timeout);
+                case TransportStatus.Cancelled:
+                    return AIResponse.Fail("Cancelled.", AIFailureKind.Cancelled);
+                default:
+                    if (result.HttpCode == 429) return AIResponse.Fail("The dialogue server is busy (rate limited).", AIFailureKind.RateLimited);
+                    return AIResponse.Fail($"The dialogue server returned an error ({result.HttpCode}).", AIFailureKind.ServerError);
+            }
+
+            ValidationResult valid = ResponseValidator.Validate(result.Body, request, _options.MaxReplyCharacters, _options.MaxNarrationCharacters);
+            if (!valid.IsValid) return AIResponse.Fail("Rejected reply: " + valid.Reason, AIFailureKind.InvalidResponse);
+
+            return AIResponse.Ok(valid.Text, valid.Narration);
+        }
+
+        private void Record(AIResponse response)
         {
-            if (mode == TLA.Data.Config.AIProviderMode.Online && !string.IsNullOrWhiteSpace(backendBaseUrl))
-                return new OnlineAIProvider(backendBaseUrl);
-            return new MockAIProvider(mockMinDelayMs, mockMaxDelayMs);
+            if (response.Success)
+            {
+                _consecutiveFailures = 0;
+                LastFailure = AIFailureKind.None;
+                return;
+            }
+
+            LastFailure = response.FailureKind;
+            // Cancelling (leaving the interview) isn't the server's fault.
+            if (response.FailureKind == AIFailureKind.Cancelled) return;
+
+            _consecutiveFailures++;
+            if (_consecutiveFailures >= Math.Max(1, _options.FailuresBeforePause))
+            {
+                _pausedUntil = _clock() + _options.PauseSeconds;
+                _consecutiveFailures = 0;
+            }
         }
     }
 }

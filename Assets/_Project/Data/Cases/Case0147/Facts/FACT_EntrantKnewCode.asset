@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe0c7dc97d4c13549b32bda1d2e6290c, type: 3}
+  m_Name: FACT_EntrantKnewCode
+  m_EditorClassIdentifier: TLA.Data::TLA.Data.Evidence.CaseFact
+  factId: FACT_EntrantKnewCode
+  title: The 21:40 visitor knew the code
+  description: The figure on camera arrived two minutes after the master code was
+    used. They knew the code, so they knew the firm.
+  source: CCTV and access log, compared
+  reliability: 1
+  relatedEvidence:
+  - {fileID: 11400000, guid: 49470ad0a151ed047aa18033f28d003a, type: 2}
+  - {fileID: 11400000, guid: 683c81159941de04487f30cff2078be4, type: 2}
+  relatedStatements:
+  - {fileID: 11400000, guid: c23b64e0f27ed104a9dcadc6b602a9bf, type: 2}
+  - {fileID: 11400000, guid: ae751470fcce88b448e43a36b4206f95, type: 2}
+  isKeyFact: 1

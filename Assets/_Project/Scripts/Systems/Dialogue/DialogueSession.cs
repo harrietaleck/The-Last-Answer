@@ -19,6 +19,10 @@ namespace TLA.Systems.Dialogue
         public DialogueIntent Intent;
         /// <summary>True when the main provider failed and the mock answered instead.</summary>
         public bool UsedFallback;
+        /// <summary>Why the main provider failed (None if it answered).</summary>
+        public AIFailureKind ProviderFailure;
+        /// <summary>The main provider's error message, for logs (null if it answered).</summary>
+        public string ProviderError;
         /// <summary>True when this turn exposed a lie with evidence.</summary>
         public bool ExposedContradiction => Success && Plan != null && Plan.Kind == ResponseKind.EvidenceContradiction;
 
@@ -36,7 +40,7 @@ namespace TLA.Systems.Dialogue
     {
         public const int MaxInputLength = 200;
 
-        private readonly IAIProvider _provider;
+        private IAIProvider _provider;
         private readonly IAIProvider _fallback;
         private readonly List<DialogueMessage> _history = new List<DialogueMessage>();
         private readonly Dictionary<string, int> _asked = new Dictionary<string, int>();
@@ -64,6 +68,21 @@ namespace TLA.Systems.Dialogue
         public IReadOnlyCollection<string> PresentedEvidence => _presented;
 
         public string InvestigatorName { get; set; } = "You";
+
+        /// <summary>The case this interview belongs to (only its public details are ever sent online).</summary>
+        public CaseDefinition Case { get; set; }
+
+        /// <summary>The provider that phrases replies. Can be swapped between turns (e.g. the player switches AI mode).</summary>
+        public IAIProvider Provider
+        {
+            get => _provider;
+            set
+            {
+                if (value == null) throw new ArgumentNullException(nameof(value));
+                if (IsBusy) throw new InvalidOperationException("Can't change provider during a turn.");
+                _provider = value;
+            }
+        }
 
         // ---- ResponsePlanner.IState
         public int TimesAsked(string topicId) => topicId != null && _asked.TryGetValue(topicId, out int n) ? n : 0;
@@ -97,15 +116,39 @@ namespace TLA.Systems.Dialogue
             return RunAsync(player, intent, plan, discoveredEvidence, ct);
         }
 
+        /// <summary>
+        /// False when the game's investigation system decides contradictions (it calls <see cref="ChallengeAsync"/>
+        /// for those); true for stand-alone use, where a topic's contradictedByEvidence exposes it.
+        /// </summary>
+        public bool DetectContradictionsOnPresent { get; set; } = true;
+
         /// <summary>The player shows the suspect a piece of evidence they've discovered.</summary>
         public Task<DialogueTurn> PresentEvidenceAsync(string evidenceId, string evidenceName, ICollection<string> discoveredEvidence, CancellationToken ct = default)
         {
             if (string.IsNullOrEmpty(evidenceId)) return Task.FromResult(DialogueTurn.Failed("Choose a piece of evidence."));
             if (IsBusy) return Task.FromResult(DialogueTurn.Failed($"Wait for {Suspect.ShortName} to answer."));
 
-            ResponsePlan plan = ResponsePlanner.PlanEvidence(evidenceId, evidenceName, Knowledge, this);
+            ResponsePlan plan = ResponsePlanner.PlanEvidence(evidenceId, evidenceName, Knowledge, this, DetectContradictionsOnPresent);
             var player = new DialogueMessage(DialogueSpeaker.System, "", $"You show {Suspect.ShortName}: {evidenceName}.");
             return RunAsync(player, new DialogueIntent(IntentKind.Unknown, plan.Topic), plan, discoveredEvidence, ct);
+        }
+
+        /// <summary>
+        /// The player challenges one of the suspect's statements (about <paramref name="topicId"/>) with evidence.
+        /// <paramref name="verdict"/> comes from the investigation system's ContradictionChecker; the suspect's
+        /// reply follows it (admission / evasion / brushed off), and the AI provider only chooses the words.
+        /// </summary>
+        public Task<DialogueTurn> ChallengeAsync(string topicId, string claim, string evidenceId, string evidenceName, ChallengeVerdict verdict,
+            ICollection<string> discoveredEvidence, CancellationToken ct = default)
+        {
+            if (string.IsNullOrEmpty(evidenceId)) return Task.FromResult(DialogueTurn.Failed("Choose a piece of evidence."));
+            if (IsBusy) return Task.FromResult(DialogueTurn.Failed($"Wait for {Suspect.ShortName} to answer."));
+
+            KnowledgeTopic topic = Knowledge != null ? Knowledge.FindTopic(topicId) : null;
+            ResponsePlan plan = ResponsePlanner.PlanChallenge(topic, evidenceId, evidenceName, verdict, this);
+            string said = string.IsNullOrWhiteSpace(claim) ? "" : $" \"{claim}\"";
+            var player = new DialogueMessage(DialogueSpeaker.System, "", $"You challenge {Suspect.ShortName}'s statement{said} with: {evidenceName}.");
+            return RunAsync(player, new DialogueIntent(IntentKind.Challenge, topic), plan, discoveredEvidence, ct);
         }
 
         public List<SuggestedQuestion> GetSuggestions(ICollection<string> discoveredEvidence, int max = SuggestionBuilder.DefaultMax) =>
@@ -122,6 +165,7 @@ namespace TLA.Systems.Dialogue
                 {
                     Suspect = Suspect,
                     Knowledge = Knowledge,
+                    Case = Case,
                     PlayerInput = player?.Text ?? string.Empty,
                     Intent = intent,
                     Plan = plan,
@@ -138,7 +182,9 @@ namespace TLA.Systems.Dialogue
 
                 AIResponse response = await TryProvider(_provider, context, ct);
                 bool usedFallback = false;
-                if ((response == null || !response.Success) && _fallback != null)
+                AIFailureKind failure = response != null && !response.Success ? response.FailureKind : AIFailureKind.None;
+                string providerError = response != null && !response.Success ? response.Error : null;
+                if ((response == null || !response.Success) && _fallback != null && _fallback != _provider)
                 {
                     // The fallback ignores the (possibly timed-out) token: the offline mock always gets its chance.
                     response = await TryProvider(_fallback, context, CancellationToken.None);
@@ -146,7 +192,7 @@ namespace TLA.Systems.Dialogue
                 }
 
                 if (response == null || !response.Success || string.IsNullOrWhiteSpace(response.Text))
-                    return new DialogueTurn { Success = false, Error = $"{Suspect.ShortName} didn't respond. Try asking again.", PlayerMessage = player, Plan = plan, Intent = intent };
+                    return new DialogueTurn { Success = false, Error = $"{Suspect.ShortName} didn't respond. Try asking again.", PlayerMessage = player, Plan = plan, Intent = intent, ProviderFailure = failure, ProviderError = providerError };
 
                 // Success: apply the rules' state changes, then record the reply.
                 Composure = newComposure;
@@ -163,7 +209,7 @@ namespace TLA.Systems.Dialogue
                 if (plan.Topic != null) _lastTopicId = plan.Topic.topicId;
                 _turn++;
 
-                var turn = new DialogueTurn { Success = true, PlayerMessage = player, Plan = plan, Intent = intent, UsedFallback = usedFallback };
+                var turn = new DialogueTurn { Success = true, PlayerMessage = player, Plan = plan, Intent = intent, UsedFallback = usedFallback, ProviderFailure = failure, ProviderError = providerError };
                 if (!string.IsNullOrWhiteSpace(response.Narration))
                     turn.Responses.Add(Add(new DialogueMessage(DialogueSpeaker.System, "", response.Narration)));
                 turn.Responses.Add(Add(new DialogueMessage(DialogueSpeaker.Suspect, Suspect.displayName, response.Text, plan.Topic?.topicId)));
@@ -183,11 +229,11 @@ namespace TLA.Systems.Dialogue
             }
             catch (OperationCanceledException)
             {
-                return AIResponse.Fail("Cancelled.");
+                return AIResponse.Fail("Cancelled.", AIFailureKind.Cancelled);
             }
             catch (Exception e)
             {
-                return AIResponse.Fail(e.Message);
+                return AIResponse.Fail(e.Message, AIFailureKind.Unknown);
             }
         }
 
@@ -199,5 +245,72 @@ namespace TLA.Systems.Dialogue
         }
 
         private static int Clamp(int value) => value < 0 ? 0 : value > 100 ? 100 : value;
+
+        // ------------------------------------------------------------------ saving
+
+        /// <summary>Everything about this interview as plain data (for save files).</summary>
+        public DialogueSessionSnapshot CaptureSnapshot()
+        {
+            var snap = new DialogueSessionSnapshot
+            {
+                suspectId = Suspect.suspectId,
+                composure = Composure,
+                turn = _turn,
+                lastTopicId = _lastTopicId,
+                asked = new Dictionary<string, int>(_asked),
+                contradicted = new List<string>(_contradicted),
+                presented = new List<string>(_presented),
+                variants = new Dictionary<string, int>(_variants)
+            };
+            foreach (DialogueMessage m in _history)
+                snap.history.Add(new DialogueSessionSnapshot.Line { speaker = m.Speaker, speakerName = m.SpeakerName, text = m.Text, topicId = m.TopicId });
+            return snap;
+        }
+
+        /// <summary>Puts a saved interview back (history, composure, topics asked and exposed, evidence shown).</summary>
+        public void RestoreSnapshot(DialogueSessionSnapshot snap)
+        {
+            if (snap == null) return;
+            if (IsBusy) throw new InvalidOperationException("Can't restore an interview during a turn.");
+            _history.Clear();
+            if (snap.history != null)
+                foreach (DialogueSessionSnapshot.Line l in snap.history)
+                    if (l != null) Add(new DialogueMessage(l.speaker, l.speakerName ?? "", l.text ?? "", l.topicId));
+            _asked.Clear();
+            if (snap.asked != null) foreach (var kv in snap.asked) _asked[kv.Key] = Math.Max(0, kv.Value);
+            _contradicted.Clear();
+            if (snap.contradicted != null) _contradicted.UnionWith(snap.contradicted);
+            _presented.Clear();
+            if (snap.presented != null) _presented.UnionWith(snap.presented);
+            _variants.Clear();
+            if (snap.variants != null) foreach (var kv in snap.variants) _variants[kv.Key] = Math.Max(0, kv.Value);
+            _lastTopicId = snap.lastTopicId;
+            _turn = Math.Max(0, snap.turn);
+            Composure = Clamp(snap.composure);
+        }
+    }
+
+    /// <summary>A saved interview: plain data only.</summary>
+    [Serializable]
+    public sealed class DialogueSessionSnapshot
+    {
+        [Serializable]
+        public sealed class Line
+        {
+            public DialogueSpeaker speaker;
+            public string speakerName;
+            public string text;
+            public string topicId;
+        }
+
+        public string suspectId;
+        public int composure;
+        public int turn;
+        public string lastTopicId;
+        public List<Line> history = new List<Line>();
+        public Dictionary<string, int> asked = new Dictionary<string, int>();
+        public List<string> contradicted = new List<string>();
+        public List<string> presented = new List<string>();
+        public Dictionary<string, int> variants = new Dictionary<string, int>();
     }
 }

@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df52e01750a2d85499dcca6bb2284122, type: 3}
+  m_Name: EVD_CCTV
+  m_EditorClassIdentifier: TLA.Data::TLA.Data.Evidence.EvidenceDefinition
+  evidenceId: EVD_CCTV
+  displayName: CCTV still, 21:40
+  category: 3
+  description: 'A frame from the lobby camera: someone entering the building at 21:40,
+    face hidden.'
+  locationFound: "Evidence Room \xB7 laptop, CCTV archive"
+  interactionPrompt: Review CCTV footage
+  pages:
+  - "HARLOW ST 18  \xB7  LOBBY CAM 02\n14th  \xB7  21:40:12\n\nA figure enters through
+    the main door and walks straight to the stairs without looking at the reception
+    desk.\n\nLong dark coat. Hood or hat. Something flat carried under the left arm.\n\nThe
+    figure is not seen on this camera again before 23:50."
+  image: {fileID: 0}
+  caption: 
+  examinationNotes: 'Frame by frame: the figure is about 1.8 m tall and doesn''t
+    hesitate at the stairs. They have been here before.'
+  relatedFacts:
+  - {fileID: 11400000, guid: 347dcae623180054694ea33ecc909541, type: 2}
+  collectable: 0
+  noteOnCollect: 
+  objectiveOnCollect: 
+  discovery:
+    requiresCollected: []
+    requiresExamined: []
+    requiresFacts: []
+    hiddenUntilAvailable: 0
+    lockedPrompt: Search
+    lockedHint: Nothing stands out yet.
+  connections:
+  - other: {fileID: 11400000, guid: 683c81159941de04487f30cff2078be4, type: 2}
+    explanation: 'The master code was used at 21:38. Two minutes later the figure
+      walks into the lobby. Whoever came at 21:40 knew the code: someone from the
+      firm.'
+    establishesFact: {fileID: 11400000, guid: 7dc6f627fea1d3440ab4b7eb0f81e026, type: 2}
