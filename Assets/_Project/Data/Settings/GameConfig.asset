@@ -25,3 +25,4 @@ MonoBehaviour:
     requestTimeoutSeconds: 10
   debug:
     showDebugOverlay: 1
+  caseCatalog: {fileID: 11400000, guid: f087f5509680973459153599b1c3615e, type: 2}

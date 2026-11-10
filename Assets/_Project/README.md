@@ -176,9 +176,7 @@ There's **no jump**, on purpose. An investigator doesn't need platforming, and i
 Player            CharacterController · PlayerInputReader · FirstPersonController · PlayerInteractor
 ├── CameraPivot   moves down when crouching, tilts for looking up/down
 │   └── Main Camera
-└── HUD           Canvas · InteractionPromptUI
-    ├── Crosshair     small centre dot (brightens when something is usable)
-    └── Prompt        "[E] Inspect" box (fades in/out)
+(The HUD, including the crosshair and "[E] Inspect" prompt, is global: UI_GameRoot in the Bootstrap scene.)
 ```
 Drop the prefab into any scene that has a floor. The Player's position is at its **feet**.
 
@@ -252,7 +250,7 @@ Full details are in **`LIGHTING_AND_ENVIRONMENT_GUIDE.md`** (repository root). S
 | `MainMenuController` | UI/Menus | New Game / Continue / Quit. Only calls the GameManager |
 | `CinematicShot` / `CinematicShotDirector` | Gameplay/Cinematics | Saved camera angles and the camera that cuts between them |
 | `InterviewSeat` | Gameplay/Cinematics | "[E] Sit down": enters Interrogating and hands the view to the director. "[E] Stand up" returns |
-| `InterviewHintUI` | UI/HUD | "[Tab] Change camera  [E] Stand up" while seated |
+| `DialoguePanel` | UI/Dialogue | The interview screen (replaced the old seated hint). See `UI_AND_DIALOGUE_GUIDE.md` |
 | `ProceduralRoomTone` | Gameplay/Environment | Generated ambience (rumble + hum) until real audio exists |
 | `FlickeringLight`, `CameraDrift` | Gameplay/Environment | Small atmosphere helpers |
 | Environment generator | Scripts/Editor/Environment | **The Last Answer → Environment** menu: URP setup and location blockouts |
@@ -260,3 +258,20 @@ Full details are in **`LIGHTING_AND_ENVIRONMENT_GUIDE.md`** (repository root). S
 **Scenes in the Build Profile:** Bootstrap → MainMenu → PoliceStation → InterrogationRoom → EvidenceRoom → Sandbox (dev).
 **New Game** now starts in **PoliceStation** (`GameConfig → Scenes → New Game Scene`).
 **Input:** a new **Interview** action map (Tab = next shot, E = stand up) is active only while seated.
+
+---
+
+## Game UI and suspect dialogue
+
+Full details, including **how to connect the UI to game systems**, are in **`UI_AND_DIALOGUE_GUIDE.md`** (repository root).
+
+| System | Where | Job |
+|---|---|---|
+| `UITheme` + component prefabs | UI/Theme, Prefabs/UI/Components | One look for every screen: colours, font, reusable buttons, rows, toasts |
+| `UI_GameRoot` | Prefabs/UI (in Bootstrap) | HUD, notifications, dialogue screen, pause menu + notebook, settings |
+| `CaseSessionService` | Systems/Investigation | Current case, objective, evidence, notes; saved with the game |
+| `DialogueSession` | Systems/Dialogue | One suspect's interview: intent → rules → provider → history |
+| `IntentMatcher` / `ResponsePlanner` | Systems/Dialogue | What the player asked / what the suspect does (C# rules, never confess) |
+| `IAIProvider` → `MockAIProvider`, `OnlineAIProvider` | Systems/Dialogue | Turn the decision into words (offline now, backend later) |
+| `DialogueManager` | Gameplay/Interview | Connects interview events, the session and the UI in a scene |
+| `SuspectProfile` + `SuspectKnowledge` | Data/Cases | Who a suspect is; what they know, hide and lie about |

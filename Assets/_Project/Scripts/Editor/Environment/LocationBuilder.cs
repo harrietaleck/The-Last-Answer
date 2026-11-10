@@ -38,7 +38,9 @@ namespace TLA.EditorTools.Environment
         /// <summary>Builds everything without asking (used by the menu after confirming, and by automation).</summary>
         public static void BuildAll()
         {
+            UI.CaseDataBuilder.EnsureCaseData();
             RenderPipelineSetup.Run();
+            GameObject gameUi = UI.UIScreensBuilder.BuildPrefabs();
             UpdatePlayerPrefab();
 
             MainMenuBuilder.Build();
@@ -46,13 +48,36 @@ namespace TLA.EditorTools.Environment
             InterrogationRoomBuilder.Build();
             EvidenceRoomBuilder.Build();
 
-            UpdateBootstrap();
+            UpdateBootstrap(gameUi);
             UpdateBuildSettings();
             UpdateGameConfig();
 
             AssetDatabase.SaveAssets();
             EditorSceneManager.OpenScene(PoliceStationBuilder.ScenePath);
             Debug.Log("[Environment] All locations built.");
+        }
+
+        [MenuItem("The Last Answer/UI/Rebuild UI (prefabs, main menu, Bootstrap UI)", priority = 20)]
+        private static void RebuildUIFromMenu()
+        {
+            bool confirmed = EditorUtility.DisplayDialog("Rebuild the UI?",
+                "This regenerates the UI component prefabs, UI_GameRoot, the MainMenu scene and the Bootstrap UI.\n\n" +
+                "Manual changes to those will be LOST. Location scenes are not touched.", "Rebuild", "Cancel");
+            if (confirmed && EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) BuildUI();
+        }
+
+        /// <summary>Rebuilds only the UI (no 3D locations except the main menu backdrop).</summary>
+        public static void BuildUI()
+        {
+            UI.CaseDataBuilder.EnsureCaseData();
+            GameObject gameUi = UI.UIScreensBuilder.BuildPrefabs();
+            UpdatePlayerPrefab();
+            MainMenuBuilder.Build();
+            UpdateBootstrap(gameUi);
+            UpdateGameConfig();
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.OpenScene(BootstrapPath);
+            Debug.Log("[UI] UI rebuilt.");
         }
 
         /// <summary>Player prefab: spawn-point placement + post-processing on its camera.</summary>
@@ -62,6 +87,10 @@ namespace TLA.EditorTools.Environment
             try
             {
                 if (root.GetComponent<PlayerSpawnPlacement>() == null) root.AddComponent<PlayerSpawnPlacement>();
+
+                // The HUD is now global (UI_GameRoot in Bootstrap), so the prefab's own HUD canvas goes.
+                Transform oldHud = root.transform.Find("HUD");
+                if (oldHud != null) Object.DestroyImmediate(oldHud.gameObject);
                 Camera cam = root.GetComponentInChildren<Camera>(true);
                 if (cam != null)
                 {
@@ -77,10 +106,26 @@ namespace TLA.EditorTools.Environment
             }
         }
 
-        /// <summary>Adds the full-screen fader (fade-to-black between scenes) to the Bootstrap scene.</summary>
-        private static void UpdateBootstrap()
+        /// <summary>
+        /// Bootstrap (always loaded) gets everything shared by all scenes: the screen fader, the game UI
+        /// (HUD, dialogue, pause, settings), the single EventSystem and the brightness control.
+        /// </summary>
+        private static void UpdateBootstrap(GameObject gameUiPrefab)
         {
             var scene = EditorSceneManager.OpenScene(BootstrapPath, OpenSceneMode.Single);
+
+            foreach (GameObject rootObject in scene.GetRootGameObjects())
+                if (rootObject.name == "UI_GameRoot" || rootObject.name == "EventSystem" || rootObject.name == "DisplayBrightness")
+                    Object.DestroyImmediate(rootObject); // replaced below with fresh copies
+
+            PrefabUtility.InstantiatePrefab(gameUiPrefab, scene);
+
+            var es = new GameObject("EventSystem");
+            es.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            es.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+
+            new GameObject("DisplayBrightness").AddComponent<TLA.Gameplay.Environment.DisplayBrightness>();
+
             if (Object.FindFirstObjectByType<ScreenFader>() == null)
             {
                 var canvasGo = new GameObject("ScreenFader", typeof(RectTransform));
@@ -122,6 +167,7 @@ namespace TLA.EditorTools.Environment
             var config = AssetDatabase.LoadAssetAtPath<GameConfig>(GameConfigPath);
             var so = new SerializedObject(config);
             so.FindProperty("scenes.newGameScene").stringValue = PoliceStationBuilder.SceneName;
+            so.FindProperty("caseCatalog").objectReferenceValue = AssetDatabase.LoadAssetAtPath<TLA.Data.Cases.CaseCatalog>(UI.CaseDataBuilder.CatalogPath);
             so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(config);
         }

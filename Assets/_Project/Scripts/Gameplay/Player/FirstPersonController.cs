@@ -50,6 +50,8 @@ namespace TLA.Gameplay.Player
         private float _currentHeight;
         private bool _wantsCrouch;
         private float _userSensitivity = 1f;
+        private bool _userInvertY;
+        private Camera _camera;
 
         public PlayerMovementSettings Settings => settings;
 
@@ -74,6 +76,7 @@ namespace TLA.Gameplay.Player
                 return;
             }
 
+            _camera = cameraPivot.GetComponentInChildren<Camera>(true);
             _currentHeight = settings.standingHeight;
             ApplyHeight(_currentHeight);
             _pitch = NormalizeAngle(cameraPivot.localEulerAngles.x);
@@ -82,7 +85,7 @@ namespace TLA.Gameplay.Player
         private void OnEnable()
         {
             EventBus.Subscribe<UserSettingsChangedEvent>(OnUserSettingsChanged);
-            RefreshUserSensitivity();
+            RefreshUserSettings();
         }
 
         private void OnDisable()
@@ -123,7 +126,8 @@ namespace TLA.Gameplay.Player
 
             transform.Rotate(0f, delta.x, 0f, Space.Self);               // turn body left/right
 
-            _pitch += settings.invertY ? delta.y : -delta.y;              // look up/down
+            bool invert = settings.invertY != _userInvertY;               // player option flips the developer default
+            _pitch += invert ? delta.y : -delta.y;                        // look up/down
             _pitch = Mathf.Clamp(_pitch, -settings.maxLookAngle, settings.maxLookAngle);
             cameraPivot.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
         }
@@ -223,13 +227,25 @@ namespace TLA.Gameplay.Player
 
         private void OnUserSettingsChanged(UserSettingsChangedEvent evt)
         {
-            RefreshUserSensitivity();
+            RefreshUserSettings();
         }
 
-        /// <summary>Reads the player's Mouse Sensitivity option (multiplier on top of lookSensitivity).</summary>
-        private void RefreshUserSensitivity()
+        /// <summary>
+        /// Reads the player's options: Mouse Sensitivity (multiplier on top of lookSensitivity),
+        /// Invert Y and Field of View.
+        /// </summary>
+        private void RefreshUserSettings()
         {
-            _userSensitivity = Services.TryGet(out ConfigService config) ? config.User.mouseSensitivity : 1f;
+            if (!Services.TryGet(out ConfigService config))
+            {
+                _userSensitivity = 1f;
+                _userInvertY = false;
+                return;
+            }
+
+            _userSensitivity = config.User.mouseSensitivity;
+            _userInvertY = config.User.invertY;
+            if (_camera != null) _camera.fieldOfView = config.User.fieldOfView;
         }
 
         private static float NormalizeAngle(float degrees)

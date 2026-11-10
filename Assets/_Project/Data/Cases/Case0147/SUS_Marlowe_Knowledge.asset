@@ -1,0 +1,313 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ba57b263b04bee4fb458292c58d69e5, type: 3}
+  m_Name: SUS_Marlowe_Knowledge
+  m_EditorClassIdentifier: TLA.Data::TLA.Data.Cases.SuspectKnowledge
+  topics:
+  - topicId: TOP_Whereabouts
+    displayName: Whereabouts
+    keywords:
+    - where
+    - that evening
+    - the evening
+    - alibi
+    - whereabouts
+    - last night
+    - home
+    - were you
+    - doing that night
+    - the 14th
+    suggestedQuestion: Where were you on the night of the 14th?
+    stance: 2
+    truth: Went to the office at 21:40 to confront Reyes; left around 22:15.
+    answers:
+    - I was at home. Alone. I already gave the officers a statement.
+    - Home. I read, I had a drink, I went to bed early. It's not complicated.
+    - At home, detective. I didn't leave the house.
+    followUpAnswer: Because I was tired and I'm fifty-one. Is staying in suspicious
+      now?
+    pressuredAnswer: I... might have gone out for a while. A drive. To clear my head.
+      That's all.
+    contradictedByEvidence:
+    - EVD_CCTV
+    admissionAnswer: Fine. I went to the office. About twenty to ten. Daniel and
+      I argued and I left before half past. He was alive when I walked out.
+    requiresTopic: 
+    requiresEvidence: 
+    priority: 1
+  - topicId: TOP_Alibi
+    displayName: Alibi
+    keywords:
+    - confirm
+    - witness
+    - anyone see
+    - can anyone
+    - verify
+    - who saw
+    - proof
+    - neighbour
+    - neighbor
+    - corroborate
+    suggestedQuestion: Can anyone confirm you were at home?
+    stance: 1
+    truth: His car was seen leaving at about 21:25.
+    answers:
+    - No. I live alone. That's not a crime.
+    - My neighbours keep to themselves. So, no.
+    followUpAnswer: Because nobody follows me around at night. Normal people don't
+      have alibis.
+    pressuredAnswer: My car was out of the garage for an hour. A neighbour might
+      have noticed. Happy?
+    contradictedByEvidence: []
+    admissionAnswer: 
+    requiresTopic: TOP_Whereabouts
+    requiresEvidence: 
+    priority: 2
+  - topicId: TOP_Relationship
+    displayName: Relationship with Reyes
+    keywords:
+    - relationship
+    - partner
+    - partners
+    - daniel
+    - reyes
+    - get along
+    - friend
+    - friends
+    - victim
+    - colleague
+    - know him
+    suggestedQuestion: How was your relationship with Daniel Reyes?
+    stance: 1
+    truth: Reyes was secretly negotiating a sale that would have forced Marlowe out.
+    answers:
+    - We built that firm together. Eighteen years. He was my partner.
+    - Partners disagree. We always worked it out.
+    followUpAnswer: Because that's what partners do. You wouldn't understand.
+    pressuredAnswer: He wanted to sell the firm. Behind my back. To people who'd
+      have pushed me out within a year.
+    contradictedByEvidence: []
+    admissionAnswer: 
+    requiresTopic: 
+    requiresEvidence: 
+    priority: 3
+  - topicId: TOP_Money
+    displayName: The firm's finances
+    keywords:
+    - money
+    - sell
+    - sale
+    - selling
+    - buyer
+    - finances
+    - financial
+    - debt
+    - owe
+    - offer
+    - business
+    - struggling
+    - firm
+    suggestedQuestion: Was the firm in financial trouble?
+    stance: 3
+    truth: An acquisition offer; Reyes wanted it, Marlowe opposed it.
+    answers:
+    - Our finances are none of your business.
+    - The firm is fine. Ask our accountant if you're so interested.
+    followUpAnswer: 
+    pressuredAnswer: There was an offer on the table. Daniel wanted it. I didn't.
+      That's all it was.
+    contradictedByEvidence: []
+    admissionAnswer: 
+    requiresTopic: TOP_Relationship
+    requiresEvidence: 
+    priority: 4
+  - topicId: TOP_Keys
+    displayName: Access to the office
+    keywords:
+    - key
+    - keys
+    - keycard
+    - key card
+    - access
+    - get in
+    - entry
+    - alarm
+    - lock
+    - door
+    - building
+    suggestedQuestion: Who had keys to the office?
+    stance: 0
+    truth: Reyes, Marlowe, Hayes; Kim's card was never cancelled.
+    answers:
+    - Daniel, me, Nora. And Victor still had a card. Daniel should have had it cancelled
+      after he fired him.
+    - Three of us had keys. Four, if Victor's card still works.
+    followUpAnswer: Ask building management. Victor's card was never deactivated.
+      I told Daniel twice.
+    pressuredAnswer: 
+    contradictedByEvidence: []
+    admissionAnswer: 
+    requiresTopic: 
+    requiresEvidence: 
+    priority: 5
+  - topicId: TOP_Phone
+    displayName: Unanswered calls
+    keywords:
+    - phone
+    - call
+    - calls
+    - message
+    - messages
+    - text
+    - texts
+    - voicemail
+    - mobile
+    - answer
+    suggestedQuestion: Why didn't you answer your phone that night?
+    stance: 2
+    truth: He saw the calls and ignored them.
+    answers:
+    - It was switched off. I switch it off when I go to bed.
+    - Off. Charging. I don't sleep with it next to me.
+    followUpAnswer: Because I wanted a quiet night. That's all.
+    pressuredAnswer: I saw the calls. I didn't want to talk to anyone. Not that night.
+    contradictedByEvidence: []
+    admissionAnswer: 
+    requiresTopic: 
+    requiresEvidence: 
+    priority: 6
+  - topicId: TOP_Kim
+    displayName: Victor Kim
+    keywords:
+    - victor
+    - kim
+    - fired
+    - junior
+    - dismissed
+    - sacked
+    suggestedQuestion: Tell me about Victor Kim.
+    stance: 0
+    truth: 
+    answers:
+    - Talented, arrogant and bitter. Daniel fired him two weeks ago over who designed
+      the Halden project.
+    - Victor said Daniel would regret it. In front of the whole office.
+    followUpAnswer: I'm telling you what he said. What he meant is your job.
+    pressuredAnswer: 
+    contradictedByEvidence: []
+    admissionAnswer: 
+    requiresTopic: TOP_Keys
+    requiresEvidence: 
+    priority: 7
+  - topicId: TOP_Hayes
+    displayName: Nora Hayes
+    keywords:
+    - nora
+    - hayes
+    - office manager
+    - manager
+    - found him
+    - found the body
+    suggestedQuestion: What can you tell me about Nora Hayes?
+    stance: 0
+    truth: 
+    answers:
+    - Nora runs the office. Reliable. Finding him must have been awful for her.
+    - She's been with us eight years. I trust her more than most.
+    followUpAnswer: 
+    pressuredAnswer: 
+    contradictedByEvidence: []
+    admissionAnswer: 
+    requiresTopic: 
+    requiresEvidence: 
+    priority: 8
+  - topicId: TOP_Death
+    displayName: How Reyes died
+    keywords:
+    - how did he die
+    - how did
+    - die
+    - killed
+    - how was he killed
+    - weapon
+    - cause of death
+    - died
+    - death
+    - wound
+    - blood
+    - murder
+    - murdered
+    - body
+    suggestedQuestion: 
+    stance: 4
+    truth: 
+    answers:
+    - I don't know. Nobody's told me how. I'm not sure I want to know.
+    - I wasn't there when he was found. I don't know anything about how it happened.
+    followUpAnswer: 
+    pressuredAnswer: 
+    contradictedByEvidence: []
+    admissionAnswer: 
+    requiresTopic: 
+    requiresEvidence: 
+    priority: 9
+  - topicId: TOP_CCTV
+    displayName: CCTV at 21:40
+    keywords:
+    - cctv
+    - camera
+    - cameras
+    - footage
+    - video
+    - recording
+    - 21 40
+    - 9 40
+    - lobby
+    - came in
+    suggestedQuestion: Someone entered the building at 21:40. Was that you?
+    stance: 2
+    truth: 
+    answers:
+    - People come and go from that building all evening. It wasn't me.
+    - Show me a face on that footage and then we'll talk.
+    followUpAnswer: Because I told you. I was at home.
+    pressuredAnswer: 
+    contradictedByEvidence:
+    - EVD_CCTV
+    admissionAnswer: Alright. Yes. That was me. I went to talk to Daniel. That's
+      all I did.
+    requiresTopic: 
+    requiresEvidence: EVD_CCTV
+    priority: 1
+  evidenceReactions:
+  - evidenceId: EVD_ScenePhotos
+    reaction: Don't. I don't need to see that. Put it away.
+    composureImpact: 8
+  - evidenceId: EVD_CaseFile
+    reaction: So you've read the file. Then you know I wasn't the only one with a
+      key.
+    composureImpact: 0
+  greeting: Detective. I've already given a statement. I assume this won't take long.
+  unknownQuestion:
+  - I don't see what that has to do with Daniel.
+  - Ask me something relevant.
+  - I'm an architect, not a mind reader. What are you asking?
+  accusationReplies:
+  - I didn't kill Daniel. I want that on the record.
+  - You've got nothing, so you're guessing. Guess again.
+  - Eighteen years. You think I'd throw that away?
+  repeatedQuestion:
+  - I already told you.
+  - Asking twice won't get you a different answer.
+  irrelevantEvidence:
+  - And? What am I supposed to say to that?
+  - That means nothing to me.

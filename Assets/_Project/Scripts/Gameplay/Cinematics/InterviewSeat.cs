@@ -1,17 +1,19 @@
+using TLA.Core.Events;
 using TLA.Core.Services;
+using TLA.Data.Cases;
 using TLA.Gameplay.Interaction;
 using TLA.Gameplay.Player;
+using TLA.Systems.Dialogue;
 using TLA.Systems.Flow;
 using UnityEngine;
 
 namespace TLA.Gameplay.Cinematics
 {
     /// <summary>
-    /// The investigator's chair. "[E] Sit down" switches the game to the Interrogating state and
-    /// hands the view to the <see cref="CinematicShotDirector"/>. "[E] Stand up" (the Interview
-    /// map's Leave key) returns to first person, standing at <see cref="standPoint"/>.
-    ///
-    /// The future dialogue system will start from here: sitting down is where an interview begins.
+    /// The investigator's chair. "[E] Sit down" switches the game to the Interrogating state, hands
+    /// the view to the <see cref="CinematicShotDirector"/>, and announces <see cref="InterviewStartedEvent"/>
+    /// (the dialogue screen opens). Standing up, via the Interview map's Leave key or the UI's
+    /// "End interview" button (<see cref="InterviewLeaveRequestedEvent"/>), returns to first person.
     /// </summary>
     public sealed class InterviewSeat : Interactable
     {
@@ -20,10 +22,14 @@ namespace TLA.Gameplay.Cinematics
         [Tooltip("Where the player stands after getting up (position + facing).")]
         [SerializeField] private Transform standPoint;
 
+        [Tooltip("The suspect being interviewed in this room.")]
+        [SerializeField] private SuspectProfile suspect;
+
         private FirstPersonController _player;
         private Camera _playerCamera;
 
         public bool IsSeated { get; private set; }
+        public SuspectProfile Suspect => suspect;
 
         public override bool CanInteract => base.CanInteract && !IsSeated && director != null;
 
@@ -38,7 +44,9 @@ namespace TLA.Gameplay.Cinematics
 
             IsSeated = true;
             director.LeaveRequested += StandUp;
+            EventBus.Subscribe<InterviewLeaveRequestedEvent>(OnLeaveRequested);
             director.Begin(interactor.GetComponent<PlayerInputReader>());
+            EventBus.Publish(new InterviewStartedEvent(suspect));
         }
 
         /// <summary>Ends the seated session. Also callable by other systems (e.g. when an interview ends).</summary>
@@ -47,6 +55,7 @@ namespace TLA.Gameplay.Cinematics
             if (!IsSeated) return;
 
             director.LeaveRequested -= StandUp;
+            EventBus.Unsubscribe<InterviewLeaveRequestedEvent>(OnLeaveRequested);
             director.End();
             IsSeated = false;
 
@@ -54,8 +63,15 @@ namespace TLA.Gameplay.Cinematics
             if (_player != null && standPoint != null)
                 _player.Teleport(standPoint.position, standPoint.eulerAngles.y);
 
+            EventBus.Publish(new InterviewEndedEvent());
+
             if (Services.TryGet(out GameStateManager state))
                 state.TryChangeState(GameState.Investigating);
+        }
+
+        private void OnLeaveRequested(InterviewLeaveRequestedEvent evt)
+        {
+            StandUp();
         }
 
         private void OnDisable()

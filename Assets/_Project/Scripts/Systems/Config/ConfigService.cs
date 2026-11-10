@@ -84,6 +84,17 @@ namespace TLA.Systems.Config
             EventBus.Publish(new UserSettingsChangedEvent());
         }
 
+        /// <summary>
+        /// Applies and broadcasts the current settings WITHOUT writing the file. Used while the player
+        /// drags a slider; <see cref="SaveUserSettings"/> writes once when the Settings screen closes.
+        /// </summary>
+        public void PreviewUserSettings()
+        {
+            User.Sanitize();
+            ApplyUserSettings();
+            EventBus.Publish(new UserSettingsChangedEvent());
+        }
+
         public void ResetUserSettings()
         {
             User = UserSettings.CreateDefault(Game);
@@ -91,10 +102,25 @@ namespace TLA.Systems.Config
         }
 
         // Settings that map directly onto engine values are applied here.
-        // Others (mouse sensitivity, AI mode) are read by their systems when needed.
+        // Others (mouse sensitivity, invert Y, field of view, brightness, AI mode) are read by their
+        // systems, which listen for UserSettingsChangedEvent.
         private void ApplyUserSettings()
         {
             AudioListener.volume = User.masterVolume;
+
+            if (User.qualityLevel >= 0 && User.qualityLevel < QualitySettings.names.Length && QualitySettings.GetQualityLevel() != User.qualityLevel)
+                QualitySettings.SetQualityLevel(User.qualityLevel, true);
+
+            QualitySettings.vSyncCount = User.vSync ? 1 : 0;
+
+#if !UNITY_EDITOR
+            // Resolution/window mode only make sense in a built game (the Editor's Game view ignores them).
+            FullScreenMode mode = User.displayMode >= 0 ? (FullScreenMode)User.displayMode : Screen.fullScreenMode;
+            int width = User.resolutionWidth > 0 ? User.resolutionWidth : Screen.currentResolution.width;
+            int height = User.resolutionHeight > 0 ? User.resolutionHeight : Screen.currentResolution.height;
+            if (Screen.width != width || Screen.height != height || Screen.fullScreenMode != mode)
+                Screen.SetResolution(width, height, mode);
+#endif
         }
     }
 }

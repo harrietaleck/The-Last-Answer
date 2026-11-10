@@ -14,13 +14,15 @@ namespace TLA.Gameplay.Player
     /// Bindings live in Assets/_Project/Data/Settings/PlayerControls.inputactions:
     ///   "Player" map:    Move (WASD/arrows), Look (mouse), Run (Shift), Crouch (C / Ctrl), Interact (E)
     ///   "Interview" map: NextShot (Tab), Leave (E), used while seated at the interview table
-    ///   "Global" map:    Pause (Esc), always active, so you can un-pause
+    ///   "Global" map:    Pause (Esc), Notebook (J), always active, so you can un-pause
     /// Double-click that asset to change keys; no code changes needed.
     ///
     /// It follows the game state:
     ///   Investigating -> Player map on, cursor locked and hidden
     ///   Interrogating -> Interview map on, cursor free (for dialogue UI later)
     ///   anything else -> only Global, cursor free
+    /// While a UI text box has focus (TextInputFocusChangedEvent), Player/Interview keys are ignored,
+    /// so typing a question containing "e" doesn't stand you up.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class PlayerInputReader : MonoBehaviour
@@ -39,6 +41,9 @@ namespace TLA.Gameplay.Player
         private InputAction _nextShot;
         private InputAction _leave;
         private InputAction _pause;
+        private InputAction _notebook;
+        private GameState _state = GameState.Investigating;
+        private bool _typing;
         private bool _ready;
 
         /// <summary>True while the player is allowed to move, look and interact (Investigating).</summary>
@@ -95,6 +100,7 @@ namespace TLA.Gameplay.Player
             _nextShot = _interviewMap.FindAction("NextShot", true);
             _leave = _interviewMap.FindAction("Leave", true);
             _pause = _globalMap.FindAction("Pause", true);
+            _notebook = _globalMap.FindAction("Notebook", true);
             _ready = true;
         }
 
@@ -104,7 +110,9 @@ namespace TLA.Gameplay.Player
 
             _globalMap.Enable();
             _pause.performed += OnPausePerformed;
+            _notebook.performed += OnNotebookPerformed;
             EventBus.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
+            EventBus.Subscribe<TextInputFocusChangedEvent>(OnTextInputFocusChanged);
 
             // If the game systems aren't running yet (e.g. the scene is still booting), assume
             // Investigating. The correct state arrives with the next GameStateChangedEvent.
@@ -116,7 +124,9 @@ namespace TLA.Gameplay.Player
             if (!_ready) return;
 
             _pause.performed -= OnPausePerformed;
+            _notebook.performed -= OnNotebookPerformed;
             EventBus.Unsubscribe<GameStateChangedEvent>(OnGameStateChanged);
+            EventBus.Unsubscribe<TextInputFocusChangedEvent>(OnTextInputFocusChanged);
             SetMaps(gameplay: false, interview: false);
             _globalMap.Disable();
         }
@@ -137,9 +147,25 @@ namespace TLA.Gameplay.Player
             ApplyState(evt.Current);
         }
 
+        private void OnTextInputFocusChanged(TextInputFocusChangedEvent evt)
+        {
+            _typing = evt.IsTyping;
+            ApplyState(_state);
+        }
+
         private void ApplyState(GameState state)
         {
-            SetMaps(gameplay: state == GameState.Investigating, interview: state == GameState.Interrogating);
+            _state = state;
+            bool investigating = state == GameState.Investigating;
+            bool interrogating = state == GameState.Interrogating && !_typing;
+            SetMaps(gameplay: investigating && !_typing, interview: interrogating);
+            if (investigating && _typing) ApplyCursor(false); // typing in a UI box: keep the mouse free
+        }
+
+        private void OnNotebookPerformed(InputAction.CallbackContext context)
+        {
+            if (_typing) return; // "j" typed into a text box
+            EventBus.Publish(new NotebookRequestedEvent());
         }
 
         private void OnPausePerformed(InputAction.CallbackContext context)

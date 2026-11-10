@@ -17,7 +17,9 @@ namespace TLA.EditorTools.Environment
     internal static class RenderPipelineSetup
     {
         public const string SettingsFolder = "Assets/_Project/Settings/Rendering";
-        public const string PipelinePath = SettingsFolder + "/URP_PC.asset";
+        public const string PipelinePath = SettingsFolder + "/URP_PC.asset";            // High quality
+        public const string PipelineMediumPath = SettingsFolder + "/URP_PC_Medium.asset";
+        public const string PipelineLowPath = SettingsFolder + "/URP_PC_Low.asset";
         public const string RendererPath = SettingsFolder + "/URP_PC_Renderer.asset";
         public const string StationProfilePath = SettingsFolder + "/VP_Station.asset";
         public const string InterrogationProfilePath = SettingsFolder + "/VP_Interrogation.asset";
@@ -30,15 +32,20 @@ namespace TLA.EditorTools.Environment
 
             PlayerSettings.colorSpace = ColorSpace.Linear;
 
-            UniversalRenderPipelineAsset pipeline = CreateOrUpdatePipeline();
-            GraphicsSettings.defaultRenderPipeline = pipeline;
-            for (int i = 0; i < QualitySettings.names.Length; i++)
+            // Three URP assets = three real quality tiers for the Settings screen's GRAPHICS QUALITY option.
+            UniversalRenderPipelineAsset high = CreateOrUpdatePipeline(PipelinePath, msaa: 4, shadowAtlas: 4096, softShadows: true, renderScale: 1f, shadowDistance: 30f);
+            UniversalRenderPipelineAsset medium = CreateOrUpdatePipeline(PipelineMediumPath, msaa: 2, shadowAtlas: 2048, softShadows: true, renderScale: 1f, shadowDistance: 24f);
+            UniversalRenderPipelineAsset low = CreateOrUpdatePipeline(PipelineLowPath, msaa: 1, shadowAtlas: 1024, softShadows: false, renderScale: 0.85f, shadowDistance: 18f);
+
+            GraphicsSettings.defaultRenderPipeline = high;
+            int levels = QualitySettings.names.Length;
+            for (int i = 0; i < levels; i++)
             {
-                // Quality levels may override the pipeline; make them all use ours.
+                // Lower third of Unity's quality levels → Low, middle → Medium, top → High.
                 QualitySettings.SetQualityLevel(i, false);
-                QualitySettings.renderPipeline = pipeline;
+                QualitySettings.renderPipeline = i < levels / 3 ? low : i < levels * 2 / 3 ? medium : high;
             }
-            QualitySettings.SetQualityLevel(QualitySettings.names.Length - 1, false);
+            QualitySettings.SetQualityLevel(levels - 1, false);
 
             CreateOrUpdateProfiles();
             ConvertStandardMaterials();
@@ -47,7 +54,8 @@ namespace TLA.EditorTools.Environment
             Debug.Log("[Environment] URP + Linear colour space set up.");
         }
 
-        private static UniversalRenderPipelineAsset CreateOrUpdatePipeline()
+        private static UniversalRenderPipelineAsset CreateOrUpdatePipeline(string path, int msaa, int shadowAtlas, bool softShadows,
+            float renderScale, float shadowDistance)
         {
             var renderer = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(RendererPath);
             if (renderer == null)
@@ -66,23 +74,23 @@ namespace TLA.EditorTools.Environment
             }
             rendererSo.ApplyModifiedPropertiesWithoutUndo();
 
-            var pipeline = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(PipelinePath);
+            var pipeline = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(path);
             if (pipeline == null)
             {
                 pipeline = UniversalRenderPipelineAsset.Create(renderer);
-                AssetDatabase.CreateAsset(pipeline, PipelinePath);
+                AssetDatabase.CreateAsset(pipeline, path);
             }
 
             var so = new SerializedObject(pipeline);
             SetBool(so, "m_SupportsHDR", true);
-            SetInt(so, "m_MSAA", 4);
-            SetFloat(so, "m_RenderScale", 1f);
+            SetInt(so, "m_MSAA", msaa);
+            SetFloat(so, "m_RenderScale", renderScale);
             SetInt(so, "m_AdditionalLightsRenderingMode", 1);      // per pixel
             SetInt(so, "m_AdditionalLightsPerObjectLimit", 8);
             SetBool(so, "m_AdditionalLightShadowsSupported", true); // lamps cast shadows, not just the sun
-            SetInt(so, "m_AdditionalLightsShadowmapResolution", 4096); // room for a few shadowed lamps (a point light uses 6 maps)
-            SetBool(so, "m_SoftShadowsSupported", true);
-            SetFloat(so, "m_ShadowDistance", 30f);                 // interiors are small; short distance = sharper shadows
+            SetInt(so, "m_AdditionalLightsShadowmapResolution", shadowAtlas); // room for a few shadowed lamps (a point light uses 6 maps)
+            SetBool(so, "m_SoftShadowsSupported", softShadows);
+            SetFloat(so, "m_ShadowDistance", shadowDistance);      // interiors are small; short distance = sharper shadows
             SetInt(so, "m_ShadowCascadeCount", 2);
             SetBool(so, "m_RequireDepthTexture", true);            // needed for depth of field
             so.ApplyModifiedPropertiesWithoutUndo();

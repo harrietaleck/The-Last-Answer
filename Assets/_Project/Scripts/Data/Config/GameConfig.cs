@@ -22,6 +22,10 @@ namespace TLA.Data.Config
         [SerializeField] private AIConfig ai = new AIConfig();
         [SerializeField] private DebugConfig debug = new DebugConfig();
 
+        [Tooltip("Every case in the game (Data/Cases/CaseCatalog.asset).")]
+        [SerializeField] private Cases.CaseCatalog caseCatalog;
+
+        public Cases.CaseCatalog CaseCatalog => caseCatalog;
         public SceneConfig Scenes => scenes;
         public SaveConfig Save => save;
         public AIConfig AI => ai;

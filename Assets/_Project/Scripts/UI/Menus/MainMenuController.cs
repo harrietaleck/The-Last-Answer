@@ -1,5 +1,7 @@
+using TLA.Core.Events;
 using TLA.Core.Services;
 using TLA.Systems;
+using TLA.UI.Components;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,54 +9,76 @@ using UnityEngine.UI;
 namespace TLA.UI.Menus
 {
     /// <summary>
-    /// Main menu buttons. Only calls the GameManager. The menu itself has no game logic.
-    ///   New Game → GameConfig's New Game scene (the police station hub)
-    ///   Continue → loads save slot 0 (greyed out when there's no save)
-    ///   Quit     → closes the game (stops Play Mode in the Editor)
+    /// Main menu. Presentation only: each button calls the GameManager or opens another screen.
+    ///   New Investigation      → starts the first available case
+    ///   Continue Investigation → loads save slot 0 (disabled when there's no save)
+    ///   Case Files             → the case list screen
+    ///   Settings               → the global Settings screen (in Bootstrap)
+    ///   Exit Game              → quits (stops Play Mode in the Editor)
     /// </summary>
     public sealed class MainMenuController : MonoBehaviour
     {
         private const int ContinueSlot = 0;
 
-        [SerializeField] private Button newGameButton;
-        [SerializeField] private Button continueButton;
-        [SerializeField] private Button quitButton;
+        [SerializeField] private UIScreen mainPanel;
+        [SerializeField] private CaseFilesScreen caseFiles;
 
-        [Tooltip("Optional label showing the build version.")]
+        [SerializeField] private Button newInvestigationButton;
+        [SerializeField] private Button continueButton;
+        [SerializeField] private Button caseFilesButton;
+        [SerializeField] private Button settingsButton;
+        [SerializeField] private Button exitButton;
+
+        [Tooltip("Optional label under Continue, e.g. the saved case name.")]
+        [SerializeField] private TMP_Text continueDetail;
         [SerializeField] private TMP_Text versionLabel;
 
         private void OnEnable()
         {
-            if (newGameButton != null) newGameButton.onClick.AddListener(OnNewGame);
-            if (continueButton != null) continueButton.onClick.AddListener(OnContinue);
-            if (quitButton != null) quitButton.onClick.AddListener(OnQuit);
+            newInvestigationButton.onClick.AddListener(OnNewInvestigation);
+            continueButton.onClick.AddListener(OnContinue);
+            caseFilesButton.onClick.AddListener(OnCaseFiles);
+            settingsButton.onClick.AddListener(OnSettings);
+            exitButton.onClick.AddListener(OnExit);
+            EventBus.Subscribe<SettingsClosedEvent>(OnSettingsClosed);
         }
 
         private void OnDisable()
         {
-            if (newGameButton != null) newGameButton.onClick.RemoveListener(OnNewGame);
-            if (continueButton != null) continueButton.onClick.RemoveListener(OnContinue);
-            if (quitButton != null) quitButton.onClick.RemoveListener(OnQuit);
+            newInvestigationButton.onClick.RemoveListener(OnNewInvestigation);
+            continueButton.onClick.RemoveListener(OnContinue);
+            caseFilesButton.onClick.RemoveListener(OnCaseFiles);
+            settingsButton.onClick.RemoveListener(OnSettings);
+            exitButton.onClick.RemoveListener(OnExit);
+            EventBus.Unsubscribe<SettingsClosedEvent>(OnSettingsClosed);
         }
 
         private void Start()
         {
-            if (versionLabel != null) versionLabel.text = "v" + Application.version + "  ·  prototype";
+            if (versionLabel != null) versionLabel.text = "v" + Application.version + "  ·  PROTOTYPE";
             RefreshContinue();
+            mainPanel.Show();
+            if (caseFiles != null) caseFiles.Closed += ShowMain;
+        }
+
+        private void OnDestroy()
+        {
+            if (caseFiles != null) caseFiles.Closed -= ShowMain;
         }
 
         private void RefreshContinue()
         {
-            if (continueButton == null) return;
             bool hasSave = Services.TryGet(out GameManager game) && game.Saves.HasSave(ContinueSlot);
             continueButton.interactable = hasSave;
-
-            // Dim the label too, so a disabled Continue clearly reads as unavailable.
-            var label = continueButton.GetComponentInChildren<TMP_Text>();
-            if (label != null) label.alpha = hasSave ? 1f : 0.3f;
+            if (continueDetail != null) continueDetail.text = hasSave ? "Resume your last saved investigation" : "No saved investigation";
         }
 
-        private void OnNewGame()
+        private void ShowMain()
+        {
+            mainPanel.Show();
+        }
+
+        private void OnNewInvestigation()
         {
             if (Services.TryGet(out GameManager game)) game.StartNewGame();
         }
@@ -64,7 +88,24 @@ namespace TLA.UI.Menus
             if (Services.TryGet(out GameManager game)) game.LoadGame(ContinueSlot);
         }
 
-        private void OnQuit()
+        private void OnCaseFiles()
+        {
+            mainPanel.Hide();
+            caseFiles.Show();
+        }
+
+        private void OnSettings()
+        {
+            mainPanel.Hide();
+            EventBus.Publish(new SettingsRequestedEvent());
+        }
+
+        private void OnSettingsClosed(SettingsClosedEvent evt)
+        {
+            if (caseFiles == null || !caseFiles.IsVisible) ShowMain();
+        }
+
+        private void OnExit()
         {
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;

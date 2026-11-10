@@ -1,4 +1,4 @@
-using TLA.Gameplay.Interaction;
+using TLA.Gameplay.Investigation;
 using TLA.Systems.Flow;
 using TMPro;
 using UnityEngine;
@@ -11,7 +11,7 @@ namespace TLA.EditorTools.Environment
     ///   West wall   timeline whiteboard
     ///   Centre      investigation desk: case files, open folder, scattered photos, laptop, desk lamp
     ///   East wall   evidence shelving with labelled boxes, filing cabinets
-    /// The board, case files and laptop are placeholder interactables until the evidence system exists.
+    /// The board, case files and laptop are InvestigationTriggers (placeholder evidence) until the evidence system exists.
     /// </summary>
     internal static class EvidenceRoomBuilder
     {
@@ -95,7 +95,8 @@ namespace TLA.EditorTools.Environment
             Thread(b, board, faceZ, s3, card);
             Thread(b, board, faceZ, s2, doc2);
 
-            AddPlaceholder(cork, "Study evidence board", "The evidence board will be interactive once the investigation system is built.");
+            AddTrigger(cork, "Study evidence board", "EVD_ScenePhotos", "Crime scene photographs",
+                "The office door shows no sign of forced entry. Whoever came in had a key.", "", "", "");
         }
 
         private static void BuildTimeline(Blockout b)
@@ -138,7 +139,10 @@ namespace TLA.EditorTools.Environment
             }
             var label = b.Label("CaseFiles_Label", new Vector3(-0.6f, top + 0.13f, -0.12f), Quaternion.Euler(90f, 0f, 0f), "CASE 0147", 0.25f, Ink, stack, 0.22f, 0.05f);
             label.fontStyle = FontStyles.Bold;
-            AddPlaceholder(stack.gameObject, "Read case files", "Case files will open once the evidence system is built.");
+            AddTrigger(stack.gameObject, "Read case files", "EVD_CaseFile", "Case file 0147",
+                "Initial report: victim found 23:50. Alarm never triggered. Three keyholders.",
+                "Reyes was found at 23:50 and the alarm never went off. Whoever was there had a key: Marlowe, Hayes or Kim.", "Case file 0147",
+                "Interview Elliot Marlowe in Interview Room 1.");
 
             // Open folder with documents.
             b.RotatedBox("OpenFolder_L", new Vector3(-0.13f, top + 0.004f, -0.3f), new Vector3(0.24f, 0.006f, 0.32f), new Vector3(0f, -4f, 0f), EnvMaterials.Manila, desk, false);
@@ -163,7 +167,9 @@ namespace TLA.EditorTools.Environment
             lid.localRotation = Quaternion.Euler(-15f, 0f, 0f);
             b.Box("Shell", new Vector3(0f, 0.11f, 0f), new Vector3(0.34f, 0.22f, 0.01f), EnvMaterials.Trim, lid, false);
             b.Box("Screen", new Vector3(0f, 0.11f, -0.006f), new Vector3(0.31f, 0.19f, 0.002f), EnvMaterials.Screen, lid, false);
-            AddPlaceholder(laptop.gameObject, "Use laptop", "Case database coming in a later stage.");
+            AddTrigger(laptop.gameObject, "Review CCTV footage", "EVD_CCTV", "CCTV still, 21:40",
+                "A figure enters the Harlow Street lobby at 21:40. Face hidden. Height around 1.8 m.",
+                "CCTV shows someone entering at 21:40, two hours before the body was found.", "Laptop: CCTV archive", "");
 
             b.Cylinder("Mug", new Vector3(-0.25f, top + 0.05f, 0.22f), 0.04f, 0.1f, EnvMaterials.Paper, desk);
             b.Box("Pen", new Vector3(-0.02f, top + 0.006f, -0.1f), new Vector3(0.14f, 0.01f, 0.01f), EnvMaterials.Trim, desk, false).transform.localRotation = Quaternion.Euler(0f, 30f, 0f);
@@ -265,12 +271,21 @@ namespace TLA.EditorTools.Environment
             b.RotatedBox("DeskPhoto_Image", pos + Vector3.up * 0.002f, new Vector3(0.095f, 0.002f, 0.12f), new Vector3(0f, yaw, 0f), image, parent, false);
         }
 
-        /// <summary>Temporary interactable so the player gets feedback before the evidence system exists.</summary>
-        private static void AddPlaceholder(GameObject target, string prompt, string message)
+        /// <summary>
+        /// Placeholder investigation content (InvestigationTrigger): records evidence, a note and/or a new
+        /// objective through CaseSessionService, so the HUD, notifications and notebook react.
+        /// </summary>
+        private static void AddTrigger(GameObject target, string prompt, string evidenceId, string evidenceName, string evidenceDescription,
+            string note, string noteSource, string newObjective)
         {
-            var interactable = target.AddComponent<TestInteractable>();
-            SceneKit.Set(interactable, "prompt", prompt);
-            SceneKit.Set(interactable, "message", message);
+            var trigger = target.AddComponent<InvestigationTrigger>();
+            SceneKit.Set(trigger, "prompt", prompt);
+            SceneKit.Set(trigger, "evidenceId", evidenceId);
+            SceneKit.Set(trigger, "evidenceName", evidenceName);
+            SceneKit.Set(trigger, "evidenceDescription", evidenceDescription);
+            SceneKit.Set(trigger, "note", note);
+            SceneKit.Set(trigger, "noteSource", noteSource);
+            SceneKit.Set(trigger, "newObjective", newObjective);
         }
     }
 }

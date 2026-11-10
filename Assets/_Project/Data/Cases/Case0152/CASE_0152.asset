@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32dbd27a9b743a0418aeb0ee9c9c4001, type: 3}
+  m_Name: CASE_0152
+  m_EditorClassIdentifier: TLA.Data::TLA.Data.Cases.CaseDefinition
+  caseId: CASE_0152
+  caseNumber: 0152
+  title: The Ferryman
+  location: Port District
+  briefing: 
+  initialObjective: Review the case files.
+  startScene: PoliceStation
+  isAvailable: 0
+  evidenceTotal: 0
+  suspects: []

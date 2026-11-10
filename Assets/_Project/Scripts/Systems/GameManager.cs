@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using System.IO;
 using TLA.Core.Events;
 using TLA.Core.Services;
+using TLA.Data.Cases;
 using TLA.Data.Config;
 using TLA.Systems.Config;
+using TLA.Systems.Investigation;
 using TLA.Systems.Flow;
 using TLA.Systems.Save;
 using UnityEngine;
@@ -37,6 +39,7 @@ namespace TLA.Systems
         public SceneLoader Scenes { get; private set; }
         public SaveService Saves { get; private set; }
         public ConfigService Config { get; private set; }
+        public CaseSessionService Case { get; private set; }
 
         private void Awake()
         {
@@ -103,9 +106,21 @@ namespace TLA.Systems
             _ = Scenes.LoadSceneAsync(config.Scenes.MainMenuScene);
         }
 
-        public void StartNewGame()
+        /// <summary>
+        /// Starts a fresh investigation of <paramref name="caseDefinition"/> (default: the first available
+        /// case in the catalog) and loads its start scene.
+        /// </summary>
+        public void StartNewGame(CaseDefinition caseDefinition = null)
         {
-            // FUTURE: reset case progress here before loading the first scene.
+            caseDefinition ??= config.CaseCatalog != null ? config.CaseCatalog.DefaultCase : null;
+            if (caseDefinition != null)
+            {
+                Case.StartCase(caseDefinition);
+                _ = Scenes.LoadSceneAsync(string.IsNullOrEmpty(caseDefinition.startScene) ? config.Scenes.NewGameScene : caseDefinition.startScene);
+                return;
+            }
+
+            Debug.LogWarning("[GameManager] No case available in the CaseCatalog; starting without a case.");
             _ = Scenes.LoadSceneAsync(config.Scenes.NewGameScene);
         }
 
@@ -147,6 +162,8 @@ namespace TLA.Systems
             State = AddService(new GameStateManager());
             Scenes = AddService(new SceneLoader());
             Saves = AddService(new SaveService(saveStorage, config.Save));
+            Case = AddService(new CaseSessionService(config.CaseCatalog));
+            Saves.Register(Case); // case progress is part of every save
             Services.Register(this);
 
             // Initialize only after ALL services exist, so services may look each other up.

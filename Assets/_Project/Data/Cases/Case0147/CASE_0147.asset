@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32dbd27a9b743a0418aeb0ee9c9c4001, type: 3}
+  m_Name: CASE_0147
+  m_EditorClassIdentifier: TLA.Data::TLA.Data.Cases.CaseDefinition
+  caseId: CASE_0147
+  caseNumber: 0147
+  title: Silence on Harlow Street
+  location: Harlow Street, Eastside
+  briefing: 'Daniel Reyes, 46, co-owner of Reyes & Marlowe Architects, was found
+    dead in his office at 23:50 on the night of the 14th.
+
+
+    The building''s alarm
+    was never triggered. Three people had a way in. One of them is lying.'
+  initialObjective: Review the case files in the Evidence Room.
+  startScene: PoliceStation
+  isAvailable: 1
+  evidenceTotal: 6
+  suspects:
+  - {fileID: 11400000, guid: f074a42f5aec06348bdd8190fbe4c43e, type: 2}
+  - {fileID: 11400000, guid: fd82df173c88f8141b94b4261c8dc510, type: 2}
+  - {fileID: 11400000, guid: f1e8a9631610e3d4cba16b732c2167de, type: 2}

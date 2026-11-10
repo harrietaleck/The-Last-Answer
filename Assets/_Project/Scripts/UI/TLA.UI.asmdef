@@ -3,6 +3,7 @@
     "rootNamespace": "TLA.UI",
     "references": [
         "TLA.Core",
+        "TLA.Data",
         "TLA.Systems",
         "TLA.Gameplay",
         "Unity.TextMeshPro",

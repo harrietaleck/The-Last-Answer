@@ -1,10 +1,7 @@
 using TLA.Gameplay.Cinematics;
 using TLA.Gameplay.Environment;
 using TLA.Systems.Flow;
-using TLA.UI.HUD;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace TLA.EditorTools.Environment
 {
@@ -64,7 +61,9 @@ namespace TLA.EditorTools.Environment
             BuildCorridor(b);
             CinematicShotDirector director = BuildCameraRig(b);
             BuildInterviewSeat(b, director);
-            BuildHintUI();
+
+            // Runs the interview: questions → rules → AI provider (mock offline, online later) → dialogue screen.
+            new GameObject("DialogueManager").AddComponent<TLA.Gameplay.Interview.DialogueManager>();
 
             Transform spawns = b.Group("SpawnPoints");
             SceneKit.Spawn(spawns, "FromHub", new Vector3(-3.3f, 0f, -3f), 90f, true);
@@ -286,41 +285,12 @@ namespace TLA.EditorTools.Environment
             var seat = chair.AddComponent<InterviewSeat>();
             SceneKit.Set(seat, "prompt", "Sit down");
             SceneKit.Set(seat, "director", director);
+            SceneKit.Set(seat, "suspect", UnityEditor.AssetDatabase.LoadAssetAtPath<TLA.Data.Cases.SuspectProfile>(UI.CaseDataBuilder.MarlowePath));
 
             var stand = new GameObject("InterviewSeat_StandPoint");
             stand.transform.SetParent(chair.transform.parent, false);
             stand.transform.SetPositionAndRotation(new Vector3(-2.2f, 0f, -0.9f), Quaternion.Euler(0f, 35f, 0f));
             SceneKit.Set(seat, "standPoint", stand.transform);
-        }
-
-        private static void BuildHintUI()
-        {
-            var canvasGo = new GameObject("InterviewHintUI", typeof(RectTransform));
-            var canvas = canvasGo.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 20;
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.matchWidthOrHeight = 0.5f;
-            canvasGo.AddComponent<CanvasGroup>();
-            var hint = canvasGo.AddComponent<InterviewHintUI>();
-
-            var labelGo = new GameObject("Label", typeof(RectTransform));
-            labelGo.transform.SetParent(canvasGo.transform, false);
-            var rt = (RectTransform)labelGo.transform;
-            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0f);
-            rt.pivot = new Vector2(0.5f, 0f);
-            rt.anchoredPosition = new Vector2(0f, 48f);
-            rt.sizeDelta = new Vector2(1000f, 40f);
-            var tmp = labelGo.AddComponent<TextMeshProUGUI>();
-            tmp.fontSize = 22f;
-            tmp.characterSpacing = 3f;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = new Color(0.85f, 0.86f, 0.88f, 0.85f);
-            tmp.text = "[Tab] Change camera      [E] Stand up";
-            tmp.raycastTarget = false;
-            SceneKit.Set(hint, "label", tmp);
         }
 
         private static void Marker(Transform parent, string name, Vector3 position, float yaw)
