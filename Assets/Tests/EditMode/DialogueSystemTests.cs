@@ -317,6 +317,37 @@ namespace TLA.Tests
             Assert.Greater(_session.History.Count, 20);
         }
 
+        [Test]
+        public void MockProvider_AnswersOfflineWithoutANetwork()
+        {
+            var provider = new MockAIProvider(0, 0, seed: 1);
+            var context = new DialogueContext
+            {
+                Plan = new ResponsePlan { Kind = ResponseKind.Greeting },
+                History = new List<DialogueMessage>(),
+                PresentedEvidence = new List<string>(),
+                DiscoveredEvidence = new List<string>()
+            };
+
+            AIResponse reply = provider.GenerateResponseAsync(context, CancellationToken.None).GetAwaiter().GetResult();
+
+            Assert.IsTrue(reply.Success);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(reply.Text));
+        }
+
+        [Test]
+        public void MockProvider_MissingTopicOrReaction_DoesNotThrow()
+        {
+            var repeat = new DialogueContext { Plan = new ResponsePlan { Kind = ResponseKind.TopicRepeat } };
+            Assert.IsFalse(string.IsNullOrWhiteSpace(MockAIProvider.Compose(repeat).Text));
+
+            var reaction = new DialogueContext
+            {
+                Plan = new ResponsePlan { Kind = ResponseKind.EvidenceReaction, EvidenceId = "missing" }
+            };
+            Assert.IsFalse(string.IsNullOrWhiteSpace(MockAIProvider.Compose(reaction).Text));
+        }
+
         // ------------------------------------------------------------------ fakes
 
         private sealed class SpyProvider : IAIProvider

@@ -101,10 +101,14 @@ namespace TLA.UI.Components
 
         private bool IsHot => IsInteractable && (_hovered || _selected || _marked);
 
+        /// <summary>Lowest alpha that still produces a canvas mesh. 0 is omitted, so clicks miss the row.</summary>
+        private const float MinHitAlpha = 1f / 255f;
+
         /// <summary>
-        /// Menu buttons use an invisible plate. Unity drops fully transparent graphics from the
-        /// canvas, which also drops them from pointer raycasts, so hover never arrives.
-        /// Keep a mesh for the plate and the label so the whole row can be hovered and selected.
+        /// Menu buttons use an invisible plate. Unity omits a graphic whose alpha is exactly 0
+        /// from the canvas (its depth stays -1), and the UI raycaster skips those graphics.
+        /// The label only covers the glyphs, so a click on the rest of the row did nothing.
+        /// A 1/255 plate is invisible and gives the whole row a click target.
         /// </summary>
         private void PrepareHitTarget()
         {
@@ -112,6 +116,12 @@ namespace TLA.UI.Components
             {
                 plate.raycastTarget = true;
                 plate.canvasRenderer.cullTransparentMesh = false;
+                if (plate.color.a < MinHitAlpha)
+                {
+                    Color color = plate.color;
+                    color.a = MinHitAlpha;
+                    plate.color = color;
+                }
             }
             if (label != null)
             {

@@ -9,6 +9,7 @@
         "TLA.Systems",
         "TLA.Gameplay",
         "TLA.UI",
+        "UnityEngine.UI",
         "Unity.RenderPipelines.Core.Runtime"
     ],
     "includePlatforms": [

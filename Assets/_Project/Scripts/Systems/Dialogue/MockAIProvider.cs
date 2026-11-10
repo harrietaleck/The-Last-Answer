@@ -60,23 +60,27 @@ namespace TLA.Systems.Dialogue
                     break;
 
                 case ResponseKind.TopicRepeat:
+                    if (topic == null) { text = StanceFallback(null, c); break; }
                     string recap = topic.answers != null && topic.answers.Length > 0 ? " " + topic.answers[topic.answers.Length - 1] : "";
                     text = Pick(Has(k?.repeatedQuestion) ? k.repeatedQuestion : GenericLines.Repeat(c.Temperament), plan.VariantIndex) + recap;
                     break;
 
                 case ResponseKind.TopicFollowUp:
+                    if (topic == null) { text = StanceFallback(null, c); break; }
                     text = Has(topic.followUpAnswer) && plan.VariantIndex == 0
                         ? topic.followUpAnswer
                         : Pick(GenericLines.FollowUp(topic.stance, c.Temperament), plan.VariantIndex);
                     break;
 
                 case ResponseKind.TopicPressured:
-                    text = topic.pressuredAnswer;
+                    text = Has(topic?.pressuredAnswer)
+                        ? topic.pressuredAnswer
+                        : Pick(GenericLines.Cornered(c.Temperament), plan.VariantIndex);
                     break;
 
                 case ResponseKind.TopicAdmitted:
                 case ResponseKind.EvidenceContradiction:
-                    text = Has(topic.admissionAnswer) ? topic.admissionAnswer : Pick(GenericLines.Cornered(c.Temperament), plan.VariantIndex);
+                    text = Has(topic?.admissionAnswer) ? topic.admissionAnswer : Pick(GenericLines.Cornered(c.Temperament), plan.VariantIndex);
                     break;
 
                 case ResponseKind.Challenge:
@@ -96,7 +100,10 @@ namespace TLA.Systems.Dialogue
                     break;
 
                 case ResponseKind.EvidenceReaction:
-                    text = k.FindReaction(plan.EvidenceId).reaction;
+                    EvidenceReaction reaction = k != null ? k.FindReaction(plan.EvidenceId) : null;
+                    text = Has(reaction?.reaction)
+                        ? reaction.reaction
+                        : Pick(Has(k?.irrelevantEvidence) ? k.irrelevantEvidence : GenericLines.IrrelevantEvidence(c.Temperament), plan.VariantIndex);
                     break;
 
                 case ResponseKind.ChallengeRejected:
