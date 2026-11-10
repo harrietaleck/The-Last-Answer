@@ -6,7 +6,8 @@ namespace TLA.Systems.Dev
 {
     /// <summary>
     /// Developer-only panel for testing the foundation systems before real UI exists.
-    /// Press F1 in Play Mode to show/hide it.
+    /// Press F1 in Play Mode to show/hide it. While walking around the mouse is locked, so press
+    /// Esc (pause) to get the cursor back and click its buttons.
     ///
     /// It uses Unity's built-in immediate-mode GUI (OnGUI) on purpose: it needs no UI package,
     /// no prefabs and no setup. The code is compiled ONLY in the Editor and in Development
@@ -17,7 +18,8 @@ namespace TLA.Systems.Dev
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         private const int WindowId = 7341;
 
-        private bool _visible;
+        private bool _visible;   // starts hidden: the mouse is locked during play, press F1 to show
+        private bool _allowed = true;
         private Rect _windowRect = new Rect(12, 12, 320, 10);
         private string _sceneToLoad = "Sandbox";
         private string _lastAction = "-";
@@ -25,11 +27,13 @@ namespace TLA.Systems.Dev
         private void Start()
         {
             if (Services.TryGet(out GameManager game))
-                _visible = game.Config.Game.DebugOptions.ShowDebugOverlay;
+                _allowed = game.Config.Game.DebugOptions.ShowDebugOverlay;
         }
 
         private void OnGUI()
         {
+            if (!_allowed) return;
+
             // IMGUI key handling works with both the old Input Manager and the new Input System.
             Event current = Event.current;
             if (current.type == EventType.KeyDown && current.keyCode == KeyCode.F1)

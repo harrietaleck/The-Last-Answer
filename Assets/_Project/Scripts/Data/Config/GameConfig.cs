@@ -94,7 +94,7 @@ namespace TLA.Data.Config
     [Serializable]
     public sealed class DebugConfig
     {
-        [Tooltip("Show the developer overlay (toggle with F1). Only exists in the Editor and Development builds.")]
+        [Tooltip("Allow the developer overlay (press F1 to show/hide). Only exists in the Editor and Development builds.")]
         [SerializeField] private bool showDebugOverlay = true;
 
         public bool ShowDebugOverlay => showDebugOverlay;

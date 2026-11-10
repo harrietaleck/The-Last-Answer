@@ -1,6 +1,9 @@
-# The Last Answer — Foundation Systems
+# The Last Answer — Systems Guide
 
-This explains the core architecture added in the **Foundation** stage: what each system is for, how they fit together, and how to use them in later stages.
+This explains the game's systems: what each one is for, how they fit together, and how to use them in later stages.
+- **Foundation:** GameManager, game states, scenes, config, save/load, events.
+- **First-person player:** movement, mouse look, crouching, interaction, HUD prompt. See [First-person player](#first-person-player).
+
 For the full game plan, see `THE_LAST_ANSWER_DEVELOPMENT_PLAN.md` in the repository root.
 
 ---
@@ -35,9 +38,12 @@ Code is split into **assembly definitions** (`.asmdef`). Each one compiles separ
 | `Scripts/Core` | `TLA.Core` | Generic building blocks: `EventBus`, `Services`, `IGameService`. Knows nothing about this game. | — |
 | `Scripts/Data` | `TLA.Data` | Data definitions: `GameConfig` asset, `UserSettings`. No logic. | Core |
 | `Scripts/Systems` | `TLA.Systems` | The game's systems: GameManager, state, scenes, saving, config, dev overlay. | Core, Data, Newtonsoft JSON |
-| `Assets/Tests/EditMode` | `TLA.Tests.EditMode` | Automated unit tests (Editor only, never in builds). | all of the above |
+| `Scripts/Gameplay` | `TLA.Gameplay` | Things in the world: first-person player, interaction, doors. | Core, Data, Systems, Input System |
+| `Scripts/UI` | `TLA.UI` | Screens and HUD (interaction prompt). Only listens to events. | Core, Systems, Gameplay, uGUI, TextMeshPro |
+| `Assets/Tests/EditMode` | `TLA.Tests.EditMode` | Fast unit tests (Editor only, never in builds). | Core, Data, Systems |
+| `Assets/Tests/PlayMode` | `TLA.Tests.PlayMode` | Tests that drive the real Player prefab with simulated keyboard/mouse. | all of the above |
 
-Empty folders (`AI`, `Gameplay`, `UI`, `Editor`, art, audio…) are ready for later stages. Their `.gitkeep` files only exist so Git keeps the empty folders; Unity ignores them.
+Empty folders (`AI`, `Editor`, art, audio…) are ready for later stages. Their `.gitkeep` files only exist so Git keeps the empty folders; Unity ignores them.
 
 ---
 
@@ -103,7 +109,7 @@ Current events (`Systems/GameEvents.cs`): `GameStateChangedEvent`, `SceneLoadSta
 `Services.Get<T>()` returns a registered service, or throws a clear error if Bootstrap isn't running. `Services.TryGet<T>(out t)` is the safe version. Only long-lived systems belong here.
 
 ### Dev overlay — `Systems/Dev/DebugOverlay.cs`
-Press **F1** in Play Mode. It shows the state, scene and settings, with buttons to change scenes and state, pause, save/load/delete slot 0, change volume and open the save folder. It's compiled **only** in the Editor and Development builds, and turned on by `GameConfig → Debug → Show Debug Overlay`.
+Press **F1** in Play Mode to show/hide it. It starts hidden. While you're walking around the mouse is locked, so press **Esc** (pause) to get the cursor back and click its buttons. It shows the state, scene and settings, with buttons to change scenes and state, pause, save/load/delete slot 0, change volume and open the save folder. It's compiled **only** in the Editor and Development builds, and allowed by `GameConfig → Debug → Show Debug Overlay`.
 
 ---
 
@@ -113,17 +119,19 @@ Press **F1** in Play Mode. It shows the state, scene and settings, with buttons 
 |---|---|---|
 | Bootstrap | `Scenes/Bootstrap.unity` | `GameManager` object (GameManager + DebugOverlay). No camera. **Build index 0.** |
 | MainMenu | `Scenes/MainMenu.unity` | Camera + SceneContext (MainMenu). Real menu UI comes in a later stage. |
-| Sandbox | `Scenes/Sandbox/Sandbox.unity` | Camera, light, floor, test cube + SceneContext (Investigating). For experiments. Used as the "New Game" scene for now. |
+| Sandbox | `Scenes/Sandbox/Sandbox.unity` | Test room with the **Player** prefab: walls, a working door, a locked closet door, a table with a test object, a low beam to crouch under, steps and a ramp, plus SceneContext (Investigating). Used as the "New Game" scene for now. |
 
 ---
 
 ## How to test
 
-**Automated:** *Window → General → Test Runner → EditMode → Run All.* There are 17 tests covering the event bus, the state rules, and save/load including corrupted and newer-version files.
+**Automated:** *Window → General → Test Runner*.
+- **EditMode → Run All:** 17 tests covering the event bus, the state rules, and save/load including corrupted and newer-version files.
+- **PlayMode → Run All:** 11 tests that drive the real Player prefab with simulated keys and mouse. They cover walking, running, smooth stopping, crouching, the ceiling check, mouse look and its clamp, interaction, the range limit, wall blocking, doors, and looking down at a table.
 
 **In Play Mode:**
 1. Open `Scenes/Bootstrap.unity` and press **Play**. The Console shows `[GameState] Boot -> MainMenu`.
-2. Press **F1** to open the dev overlay.
+2. Press **F1** to open the dev overlay, and **Esc** to free the mouse so you can click it.
 3. **New Game** → Sandbox loads and the state becomes `Investigating`.
 4. **Pause** → the state becomes `Paused`. **Interrogate** is refused (Console warning). **Resume** → back to `Investigating`.
 5. **Save** (slot 0) → **Main Menu** → **Load** → you're back in Sandbox, `Investigating`.
@@ -138,3 +146,94 @@ Press **F1** in Play Mode. It shows the state, scene and settings, with buttons 
 - **New saveable progress:** implement `ISaveable` and register with `SaveService`. Save IDs and plain data, never Unity object references.
 - **New content scene:** create the scene → add a `SceneContext` with the right state → add it to the Build Profile scene list → load it with `GameManager.LoadScene("Name")`.
 - **New event:** add a `readonly struct XxxEvent : IGameEvent` (past-tense name) and publish it from the system that owns the change.
+
+---
+
+## First-person player
+
+### Input — package requirements
+The player uses Unity's **Input System** package (`com.unity.inputsystem`, v1.20.1), the supported modern input solution. It replaces the old `Input.GetKey` API.
+- **Project Settings → Player → Active Input Handling** is set to **Input System Package (New)**. Unity only applies this setting after **restarting the editor**. Until you restart, no keyboard or mouse is detected in Play Mode.
+- The UI uses **Unity UI (uGUI) 2.0**, which includes **TextMeshPro**. TMP's essential resources (default font) were imported into `Assets/TextMesh Pro/`.
+
+**Controls** (from `Data/Settings/PlayerControls.inputactions`):
+
+| Action | Keys |
+|---|---|
+| Move | W A S D / arrow keys |
+| Look | Mouse |
+| Run | Hold Left Shift |
+| Crouch | C or Left Ctrl (toggle by default) |
+| Interact | E |
+| Pause / free the mouse | Esc |
+
+To change a key, double-click `PlayerControls.inputactions`, select the binding, and pick a new path. On-screen prompts update automatically, because "[E]" is read from the binding.
+
+There's **no jump**, on purpose. An investigator doesn't need platforming, and it stops players reaching places a scene wasn't built for. Adding one later would be about 10 lines in `FirstPersonController`.
+
+### Player prefab — `Prefabs/Player/Player.prefab`
+```
+Player            CharacterController · PlayerInputReader · FirstPersonController · PlayerInteractor
+├── CameraPivot   moves down when crouching, tilts for looking up/down
+│   └── Main Camera
+└── HUD           Canvas · InteractionPromptUI
+    ├── Crosshair     small centre dot (brightens when something is usable)
+    └── Prompt        "[E] Inspect" box (fades in/out)
+```
+Drop the prefab into any scene that has a floor. The Player's position is at its **feet**.
+
+| Script | Job |
+|---|---|
+| `PlayerInputReader` | The only script that talks to the Input System. Enables the controls and locks/hides the cursor **only in the Investigating state**, so pausing or a future dialogue frees the mouse automatically. Esc toggles pause. |
+| `FirstPersonController` | Walking, running, crouching (with a ceiling check), smooth acceleration, gravity, mouse look. It uses a **CharacterController** instead of a Rigidbody, which gives precise, non-floaty movement with wall sliding, steps and slopes built in. Call `Teleport()` to move the player; don't set `transform.position` directly. |
+| `PlayerInteractor` | Each frame, casts a ray from the camera centre, ignoring the player's own body. The nearest thing hit wins, so walls block doors behind them. Pressing E calls `Interact()`. Focus changes are announced as `InteractionFocusChangedEvent`. |
+| `InteractionPromptUI` | Listens for that event and shows or hides the prompt. It never calls gameplay code. Hidden whenever you're not investigating. |
+
+### Making things interactive
+Every interactive object uses **`IInteractable`**: `Prompt` (verb), `CanInteract`, `Interact()`. Most objects inherit from **`Interactable`**, which adds:
+- a **Prompt** text field (`Inspect` → shown as `[E] Inspect`),
+- an **Interaction Enabled** checkbox,
+- an **On Interacted** event you can wire up in the Inspector with no code,
+- `OnFocusGained()` / `OnFocusLost()` hooks, for example for highlighting.
+
+The object (or a child of it) needs a **normal, non-trigger collider**.
+
+| Component | Use |
+|---|---|
+| `Interactable` | Add directly for simple "press E → something happens" objects via the Inspector event. |
+| `DoorInteractable` | Hinged door. Put it on the hinge object, with the panel as a child offset along local +X. It swings open **away from the player**, the prompt switches Open/Close, and **Locked** shows "Locked". |
+| `TestInteractable` | Sandbox only: highlights on focus, flashes and logs when used. |
+| *(later)* Evidence | Will inherit from `Interactable` and call the Investigation system. The interaction code doesn't need to change. |
+
+### Configuring movement, sensitivity and interaction distance
+**Everything is in one asset:** `Assets/_Project/Data/Settings/PlayerMovementSettings.asset`. Select it and edit in the Inspector. You can do this **during Play Mode**: changes apply instantly and, unlike component values, they're **kept when you stop playing**.
+
+| Setting | Default | What it does |
+|---|---|---|
+| Walk Speed | 2.2 m/s | Normal pace (a relaxed real walk is ~1.4) |
+| Run Speed | 4.2 m/s | While holding Shift |
+| Crouch Speed | 1.2 m/s | While crouched |
+| Acceleration / Deceleration | 12 / 14 m/s² | Higher = snappier start/stop; lower = smoother, heavier feel |
+| Gravity | 15 m/s² | Downward pull (real is 9.81; a bit more feels grounded) |
+| Standing / Crouch Height | 1.8 / 1.1 m | Body (collision) height. Crouched fits under ~1.2 m obstacles |
+| Eye Offset From Top | 0.12 m | Camera height = body height − this (eyes at 1.68 m standing) |
+| Crouch Transition Speed | 8 | How fast you crouch/stand (≈ 1/8 s) |
+| Crouch Mode | Toggle | Toggle (press once) or Hold |
+| **Look Sensitivity** | 0.12 | Degrees turned per pixel of mouse movement |
+| Invert Y | off | Invert vertical look |
+| Max Look Angle | 85° | How far up/down you can look |
+| **Interaction Distance** | 2.5 m | How far from the eyes you can interact |
+| Interaction Radius | 0.05 m | Aim forgiveness. Slightly above 0 makes small objects easier to target |
+| Interaction Layers | Everything | Physics layers the interaction ray can hit |
+
+**Player-facing sensitivity:** `UserSettings.mouseSensitivity` (saved in `settings.json`, default 1.0) **multiplies** Look Sensitivity. A future Settings menu will change that value. Developer tuning goes in the asset.
+
+### Testing the player by hand
+1. **Restart Unity once** if you haven't since installing the Input System (see above).
+2. Open `Scenes/Sandbox/Sandbox.unity` → **Play** → click inside the Game view to capture the mouse.
+3. Walk (WASD), run (Shift), look around. Crouch (C) and go under the blue beam, then try standing up under it: you'll stay crouched until you're clear.
+4. Climb the steps on the left and walk down the ramp.
+5. Look at the yellow box on the table: **"[E] Inspect"** appears and the box brightens. Press **E**: it flashes, and the Console logs a message.
+6. Look at the door: **"[E] Open"** → E → it swings away from you; the prompt changes to "Close". The brown door on the right wall says **"Locked"**.
+7. Turn around: try the small yellow cube on the wall behind the start point from across the room. There's no prompt until you're within 2.5 m.
+8. Press **Esc**: the game pauses, the mouse is freed, and the HUD hides. Esc again resumes.
