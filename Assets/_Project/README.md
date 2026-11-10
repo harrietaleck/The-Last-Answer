@@ -237,3 +237,26 @@ The object (or a child of it) needs a **normal, non-trigger collider**.
 6. Look at the door: **"[E] Open"** → E → it swings away from you; the prompt changes to "Close". The brown door on the right wall says **"Locked"**.
 7. Turn around: try the small yellow cube on the wall behind the start point from across the room. There's no prompt until you're within 2.5 m.
 8. Press **Esc**: the game pauses, the mouse is freed, and the HUD hides. Esc again resumes.
+
+---
+
+## Environments and scene flow
+
+Full details are in **`LIGHTING_AND_ENVIRONMENT_GUIDE.md`** (repository root). Summary of the systems:
+
+| System | Where | Job |
+|---|---|---|
+| `SceneDoor` | Gameplay/World | Interactable that loads another scene and requests a spawn point |
+| `PlayerSpawnPoint` / `SpawnRequest` / `PlayerSpawnPlacement` | Gameplay/World | Where the player appears after a scene change (one **Default** spawn per scene) |
+| `ScreenFader` | UI/Transitions (in Bootstrap) | Cuts to black when a load starts, fades in when it finishes |
+| `MainMenuController` | UI/Menus | New Game / Continue / Quit. Only calls the GameManager |
+| `CinematicShot` / `CinematicShotDirector` | Gameplay/Cinematics | Saved camera angles and the camera that cuts between them |
+| `InterviewSeat` | Gameplay/Cinematics | "[E] Sit down": enters Interrogating and hands the view to the director. "[E] Stand up" returns |
+| `InterviewHintUI` | UI/HUD | "[Tab] Change camera  [E] Stand up" while seated |
+| `ProceduralRoomTone` | Gameplay/Environment | Generated ambience (rumble + hum) until real audio exists |
+| `FlickeringLight`, `CameraDrift` | Gameplay/Environment | Small atmosphere helpers |
+| Environment generator | Scripts/Editor/Environment | **The Last Answer → Environment** menu: URP setup and location blockouts |
+
+**Scenes in the Build Profile:** Bootstrap → MainMenu → PoliceStation → InterrogationRoom → EvidenceRoom → Sandbox (dev).
+**New Game** now starts in **PoliceStation** (`GameConfig → Scenes → New Game Scene`).
+**Input:** a new **Interview** action map (Tab = next shot, E = stand up) is active only while seated.

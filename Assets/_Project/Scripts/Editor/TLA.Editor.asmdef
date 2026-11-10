@@ -1,0 +1,27 @@
+{
+    "name": "TLA.Editor",
+    "rootNamespace": "TLA.EditorTools",
+    "references": [
+        "TLA.Core",
+        "TLA.Data",
+        "TLA.Systems",
+        "TLA.Gameplay",
+        "TLA.UI",
+        "Unity.InputSystem",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

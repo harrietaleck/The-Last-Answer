@@ -220,6 +220,54 @@
             ]
         },
         {
+            "name": "Interview",
+            "id": "c5034b2b-02e3-414d-8159-f8f2ef857e21",
+            "actions": [
+                {
+                    "name": "NextShot",
+                    "type": "Button",
+                    "id": "c6a6c366-acaf-4820-a382-f3180c1a7069",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Leave",
+                    "type": "Button",
+                    "id": "808ac1e2-02fa-45af-be39-34fd0098243c",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "bd035a8a-f361-4143-af5d-4c3fc42f97e2",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "NextShot",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "190caa7c-6621-4b5c-b26b-59dfacbefbb6",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Leave",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
             "name": "Global",
             "id": "775e9a6f-9e60-4716-b989-39d70df978ea",
             "actions": [

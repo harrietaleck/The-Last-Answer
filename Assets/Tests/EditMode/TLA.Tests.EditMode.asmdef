@@ -6,7 +6,10 @@
         "UnityEditor.TestRunner",
         "TLA.Core",
         "TLA.Data",
-        "TLA.Systems"
+        "TLA.Systems",
+        "TLA.Gameplay",
+        "TLA.UI",
+        "Unity.RenderPipelines.Core.Runtime"
     ],
     "includePlatforms": [
         "Editor"

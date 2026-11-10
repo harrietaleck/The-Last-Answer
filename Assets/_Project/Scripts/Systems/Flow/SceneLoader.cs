@@ -61,6 +61,17 @@ namespace TLA.Systems.Flow
         }
 
         /// <summary>
+        /// Treats an already-loaded scene as the current content scene (the next load will unload it).
+        /// For custom loading flows and automated tests that load a scene themselves.
+        /// </summary>
+        public void AdoptScene(Scene scene)
+        {
+            if (!scene.IsValid() || !scene.isLoaded || scene.name == BootstrapSceneName) return;
+            CurrentSceneName = scene.name;
+            SceneManager.SetActiveScene(scene);
+        }
+
+        /// <summary>
         /// Unloads the current content scene (if any) and loads <paramref name="sceneName"/>.
         /// Returns true on success. Errors are logged rather than thrown, so callers can
         /// fire-and-forget: <c>_ = sceneLoader.LoadSceneAsync("HQ");</c>

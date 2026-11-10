@@ -12,6 +12,15 @@ EditorBuildSettings:
     path: Assets/_Project/Scenes/MainMenu.unity
     guid: b896b780ee9496d459834c33f39e2ec0
   - enabled: 1
+    path: Assets/_Project/Scenes/Locations/PoliceStation.unity
+    guid: ff2d758f8793880449c5d427852f82ad
+  - enabled: 1
+    path: Assets/_Project/Scenes/Locations/InterrogationRoom.unity
+    guid: 6549a0031da134c41bd761a7526d50eb
+  - enabled: 1
+    path: Assets/_Project/Scenes/Locations/EvidenceRoom.unity
+    guid: 70be6ed0a7857cb48b863e30eb553c9a
+  - enabled: 1
     path: Assets/_Project/Scenes/Sandbox/Sandbox.unity
     guid: a43f1c7af88062b42996c42c00fa6e77
   m_configObjects: {}

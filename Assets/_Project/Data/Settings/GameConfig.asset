@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: TLA.Data::TLA.Data.Config.GameConfig
   scenes:
     mainMenuScene: MainMenu
-    newGameScene: Sandbox
+    newGameScene: PoliceStation
   save:
     saveFilePrefix: save_
     slotCount: 3
